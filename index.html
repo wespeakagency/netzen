@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="./assets/logo/netzen-isotipo-red.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Netzen transforma empresas a través de tecnología, formación y consultoría estratégica, con las personas y el bien común en el centro." />
+    <meta name="theme-color" content="#aa0000" />
+    <title>Netzen · Crecimiento empresarial consciente</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <!-- Filtros SVG del "liquid glass": el backdrop-filter los referencia por id.
+         DEBEN vivir aquí (primer hijo de body), nunca dentro de un ancestro
+         display:none / transformado / opacity<1, o Chromium descarta el backdrop. -->
+    <svg class="nz-svg-filters" aria-hidden="true" focusable="false" width="0" height="0"
+         style="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none">
+      <defs>
+        <!-- Warp estándar de panel: ruido fractal de baja frecuencia, pre-suavizado, desplaza el fondo.
+             scale 16 = refracción claramente visible en el bisel, seguro sobre el texto detrás. -->
+        <filter id="nz-liquid-glass" x="-15%" y="-15%" width="130%" height="130%"
+                color-interpolation-filters="sRGB" filterUnits="objectBoundingBox">
+          <feTurbulence type="fractalNoise" baseFrequency="0.009 0.013" numOctaves="2"
+                        seed="7" stitchTiles="stitch" result="nz-noise"/>
+          <feGaussianBlur in="nz-noise" stdDeviation="1.2" result="nz-noise-soft"/>
+          <feDisplacementMap in="SourceGraphic" in2="nz-noise-soft" scale="16"
+                             xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+        <!-- "Lente" más gruesa para el isotipo orbital del hero: baja frecuencia, scale mayor. -->
+        <filter id="nz-liquid-glass-lens" x="-20%" y="-20%" width="140%" height="140%"
+                color-interpolation-filters="sRGB" filterUnits="objectBoundingBox">
+          <feTurbulence type="fractalNoise" baseFrequency="0.006 0.010" numOctaves="2"
+                        seed="4" stitchTiles="stitch" result="n"/>
+          <feGaussianBlur in="n" stdDeviation="1.6" result="ns"/>
+          <feDisplacementMap in="SourceGraphic" in2="ns" scale="34"
+                             xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+      </defs>
+    </svg>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
