@@ -1,5 +1,11 @@
 node_modules
 dist
 standalone
+entregable
 .DS_Store
 *.local
+.env
+.env.*
+!.env.example
+
+standalone-dashboard
