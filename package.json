@@ -5,9 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:dashboard": "vite --config vite.dashboard.config.js",
     "build": "vite build",
     "build:standalone": "vite build --mode standalone",
+    "build:dashboard": "vite build --config vite.dashboard.config.js",
+    "build:dashboard:standalone": "vite build --config vite.dashboard.config.js --mode standalone",
     "entregable": "vite build --mode standalone && node scripts/make-entregable.mjs",
+    "entregable:dashboard": "vite build --config vite.dashboard.config.js --mode standalone && node scripts/make-dashboard-entregable.mjs",
+    "entregable:all": "npm run entregable && npm run entregable:dashboard",
     "preview": "vite preview"
   },
   "dependencies": {
