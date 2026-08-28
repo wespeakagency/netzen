@@ -1,9 +1,10 @@
 // /recursos/guias — lead magnets con formulario
-import React, { useState } from "react";
-import { Icon, Button, Section, SectionHeading, Reveal, Badge, ConsentLine } from "../../components/ui.jsx";
+import React, { useMemo, useState } from "react";
+import { Icon, Section, SectionHeading, Reveal, Badge, ConsentLine } from "../../components/ui.jsx";
 import { PageHero, CTABand } from "../../components/chrome.jsx";
 import { GUIAS, GUIA_DESTACADA } from "./data.js";
 import { trackEvent } from "../../lib/analytics.js";
+import { submitLead, FormSubmitError } from "../../lib/forms.js";
 
 function GuiaCover({ icon, small }) {
   return (
@@ -21,35 +22,71 @@ function GuiaCover({ icon, small }) {
 }
 
 function DescargaForm() {
-  const [sent, setSent] = useState(false);
-  if (sent) {
+  const renderedAt = useMemo(() => Date.now(), []);
+  const [nombre, setNombre] = useState("");
+  const [email, setEmail] = useState("");
+  const [empresa, setEmpresa] = useState("");
+  const [website, setWebsite] = useState("");
+  const [status, setStatus] = useState("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setStatus("sending");
+    setErrorMsg("");
+    trackEvent("form_submit", { form_type: "guia_destacada" });
+    try {
+      await submitLead({
+        formType: "guia_destacada",
+        honeypot: website,
+        renderedAt,
+        fields: { nombre, email, empresa, guia: GUIA_DESTACADA.title }
+      });
+      setStatus("sent");
+    } catch (err) {
+      setStatus("error");
+      setErrorMsg(err instanceof FormSubmitError ? err.message : "Hubo un problema. Intentá de nuevo.");
+    }
+  };
+
+  if (status === "sent") {
     return (
       <div style={{ textAlign: "center", padding: "18px 0" }}>
         <span style={{ width: 54, height: 54, borderRadius: "50%", background: "var(--status-success-tint)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
           <Icon name="Check" size={26} style={{ color: "var(--status-success)" }} />
         </span>
-        <h3 style={{ marginTop: 14, fontSize: 19, fontWeight: 700 }}>Descarga validada</h3>
-        <p style={{ marginTop: 8, fontSize: 14, color: "var(--text-secondary)" }}>El envío del PDF y la atribución al CRM se activarán al conectar esta versión.</p>
+        <h3 style={{ marginTop: 14, fontSize: 19, fontWeight: 700 }}>¡Recibimos tu solicitud!</h3>
+        <p style={{ marginTop: 8, fontSize: 14, color: "var(--text-secondary)" }}>Te enviamos la guía a <strong>{email}</strong> en los próximos minutos.</p>
       </div>
     );
   }
+
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        trackEvent("form_submit", { form_type: "guia_destacada" });
-        setSent(true);
-      }}
-      style={{ display: "grid", gap: 14 }}
-    >
-      <div className="field"><label>Nombre <span className="req">*</span></label><input placeholder="Nombre y apellido" required /></div>
-      <div className="field"><label>Correo corporativo <span className="req">*</span></label><input type="email" placeholder="tucorreo@empresa.com" required /></div>
-      <div className="field"><label>Empresa</label><input placeholder="Nombre de tu empresa" /></div>
+    <form onSubmit={handleSubmit} noValidate style={{ display: "grid", gap: 14 }}>
+      <div className="field">
+        <label htmlFor="dg-nombre">Nombre <span className="req">*</span></label>
+        <input id="dg-nombre" name="nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre y apellido" required autoComplete="name" />
+      </div>
+      <div className="field">
+        <label htmlFor="dg-email">Correo corporativo <span className="req">*</span></label>
+        <input id="dg-email" name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tucorreo@empresa.com" required autoComplete="email" />
+      </div>
+      <div className="field">
+        <label htmlFor="dg-empresa">Empresa</label>
+        <input id="dg-empresa" name="empresa" value={empresa} onChange={(e) => setEmpresa(e.target.value)} placeholder="Nombre de tu empresa" autoComplete="organization" />
+      </div>
+      <div aria-hidden="true" style={{ position: "absolute", left: "-10000px", width: 1, height: 1, overflow: "hidden" }}>
+        <label>Sitio web (no llenar)<input type="text" name="website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} /></label>
+      </div>
       <ConsentLine compact />
-      <Button block><Icon name="Download" size={16} /> Descargar guía</Button>
-      <p style={{ fontSize: 11.5, color: "var(--text-tertiary)", margin: 0, textAlign: "center" }}>
-        Integración preparada para atribuir el origen en el CRM.
-      </p>
+      {status === "error" && (
+        <div role="alert" style={{ padding: "8px 12px", borderRadius: 8, background: "var(--status-danger-tint, #fdecec)", color: "var(--status-danger, #b3261e)", fontSize: 13 }}>
+          {errorMsg}
+        </div>
+      )}
+      <button type="submit" className="btn btn--primary btn--block" disabled={status === "sending"}>
+        <Icon name="Download" size={16} /> {status === "sending" ? "Enviando..." : "Descargar guía"}
+      </button>
     </form>
   );
 }

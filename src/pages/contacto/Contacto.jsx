@@ -1,11 +1,12 @@
-// /contacto y /contacto/demo — punto de conversión (formulario → CRM)
-import React, { useState } from "react";
+// /contacto y /contacto/demo — punto de conversión (formulario → Google Sheets)
+import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Icon, Button, Section, SectionHeading, Reveal, Steps, Badge, CheckLine, ConsentLine } from "../../components/ui.jsx";
 import { Breadcrumbs, CTABand } from "../../components/chrome.jsx";
 import { Container } from "../../components/ui.jsx";
-import { WHATSAPP_URL } from "../../lib/nav.js";
+import { WHATSAPP_URL, HAS_WHATSAPP } from "../../lib/nav.js";
 import { trackEvent } from "../../lib/analytics.js";
+import { submitLead, FormSubmitError } from "../../lib/forms.js";
 
 const SITUACIONES = [
   { k: "A", label: "Apenas empiezo / explorando" },
@@ -15,63 +16,141 @@ const SITUACIONES = [
 ];
 
 const MODELOS = ["Venta directa", "Multinivel", "Retail", "Franquicias", "E-commerce", "Punto de venta"];
+const PAISES = ["México", "Colombia", "Perú", "Ecuador", "Estados Unidos", "Otro"];
+const TAMANIOS = ["Menos de 100 distribuidores", "100 – 1,000", "1,000 – 10,000", "Más de 10,000"];
+
+const INITIAL = {
+  nombre: "",
+  empresa: "",
+  whatsapp: "",
+  email: "",
+  pais: "",
+  modelo: "",
+  tamanio: "",
+  mensaje: "",
+  website: "" // honeypot
+};
 
 function FormularioContacto({ demo }) {
-  const [sent, setSent] = useState(false);
+  const renderedAt = useMemo(() => Date.now(), []);
+  const [values, setValues] = useState(INITIAL);
   const [situacion, setSituacion] = useState("A");
+  const [status, setStatus] = useState("idle"); // idle | sending | sent | error
+  const [errorMsg, setErrorMsg] = useState("");
 
-  if (sent) {
+  const update = (key) => (e) => setValues((prev) => ({ ...prev, [key]: e.target.value }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setStatus("sending");
+    setErrorMsg("");
+
+    const formType = demo ? "demo_protegido" : "diagnostico";
+    trackEvent("form_submit", { form_type: formType, route: situacion });
+
+    try {
+      await submitLead({
+        formType,
+        honeypot: values.website,
+        renderedAt,
+        fields: {
+          nombre: values.nombre,
+          empresa: values.empresa,
+          whatsapp: values.whatsapp,
+          email: values.email,
+          pais: values.pais,
+          modelo: values.modelo,
+          tamanio: demo ? values.tamanio : "",
+          situacion,
+          mensaje: values.mensaje
+        }
+      });
+      setStatus("sent");
+    } catch (err) {
+      setStatus("error");
+      setErrorMsg(err instanceof FormSubmitError ? err.message : "Hubo un problema al enviar. Intentá de nuevo.");
+    }
+  };
+
+  const resetForm = () => {
+    setValues(INITIAL);
+    setSituacion("A");
+    setStatus("idle");
+    setErrorMsg("");
+  };
+
+  if (status === "sent") {
     return (
       <div className="card card--pad-lg" style={{ textAlign: "center", boxShadow: "var(--shadow-md)" }}>
         <span style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--status-success-tint)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
           <Icon name="Check" size={30} strokeWidth={2.4} style={{ color: "var(--status-success)" }} />
         </span>
-        <h2 style={{ marginTop: 20, fontSize: 24, fontWeight: 700 }}>Solicitud validada</h2>
+        <h2 style={{ marginTop: 20, fontSize: 24, fontWeight: 700 }}>¡Recibimos tu solicitud!</h2>
         <p style={{ marginTop: 10, fontSize: 15.5, lineHeight: 1.6, color: "var(--text-secondary)" }}>
-          La experiencia de envío quedó completa. Cuando se conecte esta versión con el CRM, el equipo podrá dar seguimiento a tu {demo ? "demo protegido" : "diagnóstico"} por WhatsApp o correo.
+          Un ejecutivo se pondrá en contacto para tu {demo ? "demo protegido" : "diagnóstico"} por WhatsApp o correo en horario hábil.
         </p>
         <div style={{ marginTop: 24, display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-          <Button variant="secondary" onClick={() => setSent(false)}>Enviar otra solicitud</Button>
+          <Button variant="secondary" onClick={resetForm}>Enviar otra solicitud</Button>
           <Button variant="ghost" to="/">Volver al inicio</Button>
         </div>
       </div>
     );
   }
 
+  const sending = status === "sending";
+
   return (
     <form
       className="card card--pad-lg"
-      onSubmit={(e) => {
-        e.preventDefault();
-        trackEvent("form_submit", {
-          form_type: demo ? "demo_protegido" : "diagnostico",
-          route: situacion
-        });
-        setSent(true);
-      }}
+      onSubmit={handleSubmit}
+      noValidate
       style={{ boxShadow: "var(--shadow-md)" }}
     >
       <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 18 }}>{demo ? "Formulario de calificación" : "Solicita tu diagnóstico"}</h3>
+
       <div className="contact-grid">
-        <div className="field"><label>{demo ? "Nombre y cargo" : "Nombre completo"} <span className="req">*</span></label><input placeholder={demo ? "Nombre · Dirección / Operaciones" : "Ej. Ana Torres"} required /></div>
-        <div className="field"><label>Empresa <span className="req">*</span></label><input placeholder="Nombre de tu empresa" required /></div>
-        <div className="field"><label>WhatsApp</label><input type="tel" placeholder="+52 33 1234 5678" /><span className="hint">Con código de país</span></div>
-        <div className="field"><label>Email {demo ? "corporativo" : ""} <span className="req">*</span></label><input type="email" placeholder="ana@empresa.com" required /></div>
         <div className="field">
-          <label>País</label>
-          <select defaultValue=""><option value="" disabled>Elige tu país</option>{["México", "Colombia", "Perú", "Ecuador", "Estados Unidos", "Otro"].map((p) => <option key={p}>{p}</option>)}</select>
+          <label htmlFor="c-nombre">{demo ? "Nombre y cargo" : "Nombre completo"} <span className="req">*</span></label>
+          <input id="c-nombre" name="nombre" value={values.nombre} onChange={update("nombre")} placeholder={demo ? "Nombre · Dirección / Operaciones" : "Ej. Ana Torres"} required autoComplete="name" />
         </div>
         <div className="field">
-          <label>Modelo de negocio</label>
-          <select defaultValue=""><option value="" disabled>Elige tu modelo</option>{MODELOS.map((m) => <option key={m}>{m}</option>)}</select>
+          <label htmlFor="c-empresa">Empresa <span className="req">*</span></label>
+          <input id="c-empresa" name="empresa" value={values.empresa} onChange={update("empresa")} placeholder="Nombre de tu empresa" required autoComplete="organization" />
+        </div>
+        <div className="field">
+          <label htmlFor="c-whatsapp">WhatsApp</label>
+          <input id="c-whatsapp" name="whatsapp" type="tel" value={values.whatsapp} onChange={update("whatsapp")} placeholder="+52 33 1234 5678" autoComplete="tel" />
+          <span className="hint">Con código de país</span>
+        </div>
+        <div className="field">
+          <label htmlFor="c-email">Email {demo ? "corporativo" : ""} <span className="req">*</span></label>
+          <input id="c-email" name="email" type="email" value={values.email} onChange={update("email")} placeholder="ana@empresa.com" required autoComplete="email" />
+        </div>
+        <div className="field">
+          <label htmlFor="c-pais">País</label>
+          <select id="c-pais" name="pais" value={values.pais} onChange={update("pais")}>
+            <option value="" disabled>Elige tu país</option>
+            {PAISES.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
+        </div>
+        <div className="field">
+          <label htmlFor="c-modelo">Modelo de negocio</label>
+          <select id="c-modelo" name="modelo" value={values.modelo} onChange={update("modelo")}>
+            <option value="" disabled>Elige tu modelo</option>
+            {MODELOS.map((m) => <option key={m} value={m}>{m}</option>)}
+          </select>
         </div>
         {demo && (
           <div className="field" style={{ gridColumn: "1 / -1" }}>
-            <label>Tamaño de la red / operación</label>
-            <select defaultValue=""><option value="" disabled>Selecciona</option>{["Menos de 100 distribuidores", "100 – 1,000", "1,000 – 10,000", "Más de 10,000"].map((t) => <option key={t}>{t}</option>)}</select>
+            <label htmlFor="c-tamanio">Tamaño de la red / operación</label>
+            <select id="c-tamanio" name="tamanio" value={values.tamanio} onChange={update("tamanio")}>
+              <option value="" disabled>Selecciona</option>
+              {TAMANIOS.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
           </div>
         )}
       </div>
+
       <div style={{ marginTop: 20 }}>
         <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10 }}>¿Cuál se parece más a tu situación?</div>
         <div className="contact-grid" style={{ gap: 10 }}>
@@ -81,6 +160,7 @@ function FormularioContacto({ demo }) {
               key={s.k}
               className={`choice ${situacion === s.k ? "is-active" : ""}`}
               onClick={() => setSituacion(s.k)}
+              aria-pressed={situacion === s.k}
             >
               <span style={{
                 width: 26, height: 26, borderRadius: "50%", flexShrink: 0,
@@ -95,17 +175,30 @@ function FormularioContacto({ demo }) {
           ))}
         </div>
       </div>
+
       <div className="field" style={{ marginTop: 18 }}>
-        <label>¿Qué necesitas?</label>
-        <textarea placeholder={demo ? "Cuéntanos de tu operación para preparar un demo relevante" : "Cuéntanos brevemente tu situación y tu objetivo"} />
+        <label htmlFor="c-mensaje">¿Qué necesitas?</label>
+        <textarea id="c-mensaje" name="mensaje" value={values.mensaje} onChange={update("mensaje")} placeholder={demo ? "Cuéntanos de tu operación para preparar un demo relevante" : "Cuéntanos brevemente tu situación y tu objetivo"} />
       </div>
+
+      {/* Honeypot: los bots suelen llenar todos los inputs. Humanos no ven este campo. */}
+      <div aria-hidden="true" style={{ position: "absolute", left: "-10000px", width: 1, height: 1, overflow: "hidden" }}>
+        <label>Sitio web (no llenar)<input type="text" name="website" tabIndex={-1} autoComplete="off" value={values.website} onChange={update("website")} /></label>
+      </div>
+
       <ConsentLine style={{ marginTop: 18 }} />
+
+      {status === "error" && (
+        <div role="alert" style={{ marginTop: 14, padding: "10px 14px", borderRadius: 8, background: "var(--status-danger-tint, #fdecec)", color: "var(--status-danger, #b3261e)", fontSize: 13.5 }}>
+          {errorMsg}
+        </div>
+      )}
+
       <div style={{ marginTop: 20 }}>
-        <Button size="lg" block>{demo ? "Solicitar demo protegido" : "Agenda tu diagnóstico"}</Button>
+        <button type="submit" className="btn btn--primary btn--lg btn--block" disabled={sending}>
+          {sending ? "Enviando..." : demo ? "Solicitar demo protegido" : "Agenda tu diagnóstico"}
+        </button>
       </div>
-      <p style={{ marginTop: 12, fontSize: 11.5, color: "var(--text-tertiary)", textAlign: "center" }}>
-        Integración preparada para atribución por canal. La conexión final al CRM está pendiente.
-      </p>
     </form>
   );
 }
@@ -173,23 +266,25 @@ export default function Contacto({ demo = false }) {
               </span>
             </Link>
           </Reveal>
-          <Reveal delay={90}>
-            <a
-              href={WHATSAPP_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="card card--hover"
-              style={{ display: "flex", flexDirection: "column", gap: 12, color: "inherit", height: "100%" }}
-              onClick={() => trackEvent("whatsapp_click", { placement: "contact_card" })}
-            >
-              <span className="bubble" style={{ background: "#E8F8EE", color: "#1F7A4D" }}><Icon name="MessageCircle" size={21} /></span>
-              <h3 style={{ fontSize: 16.5, fontWeight: 700 }}>WhatsApp directo</h3>
-              <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "var(--text-secondary)" }}>Seguimiento con reglas claras, trazable hasta el CRM.</p>
-              <span style={{ marginTop: "auto", display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 13.5, color: "var(--nz-red)" }}>
-                Abrir WhatsApp <Icon name="ArrowUpRight" size={14} />
-              </span>
-            </a>
-          </Reveal>
+          {HAS_WHATSAPP && (
+            <Reveal delay={90}>
+              <a
+                href={WHATSAPP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="card card--hover"
+                style={{ display: "flex", flexDirection: "column", gap: 12, color: "inherit", height: "100%" }}
+                onClick={() => trackEvent("whatsapp_click", { placement: "contact_card" })}
+              >
+                <span className="bubble" style={{ background: "#E8F8EE", color: "#1F7A4D" }}><Icon name="MessageCircle" size={21} /></span>
+                <h3 style={{ fontSize: 16.5, fontWeight: 700 }}>WhatsApp directo</h3>
+                <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "var(--text-secondary)" }}>Seguimiento con reglas claras, trazable hasta el CRM.</p>
+                <span style={{ marginTop: "auto", display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 13.5, color: "var(--nz-red)" }}>
+                  Abrir WhatsApp <Icon name="ArrowUpRight" size={14} />
+                </span>
+              </a>
+            </Reveal>
+          )}
           <Reveal delay={180}>
             <div className="card" style={{ display: "flex", flexDirection: "column", gap: 12, height: "100%" }}>
               <span className="bubble"><Icon name="MapPin" size={21} /></span>

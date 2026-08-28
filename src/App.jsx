@@ -37,6 +37,7 @@ import Eventos from "./pages/nosotros/Eventos.jsx";
 
 import Contacto from "./pages/contacto/Contacto.jsx";
 import Legal from "./pages/legal/Legal.jsx";
+import NotFound from "./pages/NotFound.jsx";
 
 export default function App() {
   const location = useLocation();
@@ -88,7 +89,7 @@ export default function App() {
           <Route path="/legal/terminos" element={<Legal type="terms" />} />
 
           <Route path="/mapa" element={<Mapa />} />
-          <Route path="*" element={<Home />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
       <SiteFooter />

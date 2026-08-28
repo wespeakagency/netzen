@@ -1,7 +1,7 @@
 // NETZEN · capa global del sitio: header, footer, CTA band, flotantes, breadcrumbs, navegador de prototipo
 import React, { useEffect, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
-import { NAV, ROUTES, WHATSAPP_URL } from "../lib/nav.js";
+import { NAV, ROUTES, WHATSAPP_URL, HAS_WHATSAPP } from "../lib/nav.js";
 import { Icon, Button, Container } from "./ui.jsx";
 import { trackEvent } from "../lib/analytics.js";
 import isotipo from "../assets/netzen-isotipo-red.png";
@@ -256,7 +256,7 @@ const FOOTER_COLS = [
     title: "Contacto",
     links: [
       { label: "Agenda tu diagnóstico", to: "/contacto" },
-      { label: "WhatsApp", href: WHATSAPP_URL },
+      ...(HAS_WHATSAPP ? [{ label: "WhatsApp", href: WHATSAPP_URL }] : []),
       { label: "Acceso clientes", href: "#" },
       { label: "Soporte", href: "#" }
     ]
@@ -282,7 +282,7 @@ export function SiteFooter() {
                 {col.links.map((l) =>
                   l.to
                     ? <Link to={l.to} key={l.label}>{l.label}</Link>
-                    : <a href={l.href} key={l.label} target={l.href?.startsWith("http") ? "_blank" : undefined} rel="noreferrer" onClick={l.href === "#" ? (e) => e.preventDefault() : undefined}>{l.label}</a>
+                    : <a href={l.href} key={l.label} target={l.href?.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer" onClick={l.href === "#" ? (e) => e.preventDefault() : undefined}>{l.label}</a>
                 )}
               </div>
             </div>
@@ -304,17 +304,19 @@ export function SiteFooter() {
 export function FloatingActions() {
   return (
     <div className="floats">
-      <a
-        href={WHATSAPP_URL}
-        target="_blank"
-        rel="noreferrer"
-        className="float-wa"
-        aria-label="WhatsApp"
-        title="WhatsApp"
-        onClick={() => trackEvent("whatsapp_click", { placement: "floating" })}
-      >
-        <Icon name="MessageCircle" size={26} />
-      </a>
+      {HAS_WHATSAPP && (
+        <a
+          href={WHATSAPP_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="float-wa"
+          aria-label="WhatsApp"
+          title="WhatsApp"
+          onClick={() => trackEvent("whatsapp_click", { placement: "floating" })}
+        >
+          <Icon name="MessageCircle" size={26} />
+        </a>
+      )}
       <Link
         to="/contacto"
         className="float-cta"

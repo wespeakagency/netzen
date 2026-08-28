@@ -1,53 +1,92 @@
 // /recursos/webinars — sesiones en vivo y biblioteca on-demand
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Icon, Button, Section, SectionHeading, Reveal, TagChip, Badge, Steps, ConsentLine } from "../../components/ui.jsx";
 import { PageHero, CTABand } from "../../components/chrome.jsx";
 import { WEBINARS, GRABACIONES } from "./data.js";
 import { trackEvent } from "../../lib/analytics.js";
+import { submitLead, FormSubmitError } from "../../lib/forms.js";
 
 const TEMAS = ["Todos", "Industria", "Tecnología / plataforma", "Academy", "Consulting", "Casos"];
 
 function RegistroForm() {
-  const [sent, setSent] = useState(false);
-  if (sent) {
+  const renderedAt = useMemo(() => Date.now(), []);
+  const [nombre, setNombre] = useState("");
+  const [empresa, setEmpresa] = useState("");
+  const [email, setEmail] = useState("");
+  const [webinar, setWebinar] = useState("");
+  const [website, setWebsite] = useState("");
+  const [status, setStatus] = useState("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setStatus("sending");
+    setErrorMsg("");
+    trackEvent("form_submit", { form_type: "webinar" });
+    try {
+      await submitLead({
+        formType: "webinar",
+        honeypot: website,
+        renderedAt,
+        fields: { nombre, empresa, email, webinar }
+      });
+      setStatus("sent");
+    } catch (err) {
+      setStatus("error");
+      setErrorMsg(err instanceof FormSubmitError ? err.message : "Hubo un problema. Intentá de nuevo.");
+    }
+  };
+
+  if (status === "sent") {
     return (
       <div className="card card--pad-lg" style={{ textAlign: "center", boxShadow: "var(--shadow-md)" }}>
         <span style={{ width: 60, height: 60, borderRadius: "50%", background: "var(--status-success-tint)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
           <Icon name="Check" size={28} style={{ color: "var(--status-success)" }} />
         </span>
-        <h3 style={{ marginTop: 16, fontSize: 20, fontWeight: 700 }}>Registro validado</h3>
+        <h3 style={{ marginTop: 16, fontSize: 20, fontWeight: 700 }}>¡Estás registrado!</h3>
         <p style={{ marginTop: 8, fontSize: 14, lineHeight: 1.6, color: "var(--text-secondary)" }}>
-          El envío de accesos, recordatorios y grabaciones se activará al conectar esta versión con el CRM.
+          Te enviamos el acceso a <strong>{email}</strong> con el enlace y el recordatorio.
         </p>
       </div>
     );
   }
+
   return (
-    <form
-      className="card card--pad-lg"
-      onSubmit={(e) => {
-        e.preventDefault();
-        trackEvent("form_submit", { form_type: "webinar" });
-        setSent(true);
-      }}
-      style={{ boxShadow: "var(--shadow-md)" }}
-    >
+    <form className="card card--pad-lg" onSubmit={handleSubmit} noValidate style={{ boxShadow: "var(--shadow-md)" }}>
       <h3 style={{ fontSize: 19, fontWeight: 700, marginBottom: 16 }}>Formulario de registro</h3>
       <div style={{ display: "grid", gap: 14 }}>
-        <div className="field"><label>Nombre <span className="req">*</span></label><input placeholder="Nombre y apellido" required /></div>
-        <div className="field"><label>Empresa</label><input placeholder="Nombre de tu empresa" /></div>
-        <div className="field"><label>Correo corporativo <span className="req">*</span></label><input type="email" placeholder="correo@empresa.com" required /></div>
         <div className="field">
-          <label>¿Qué webinar te interesa?</label>
-          <select defaultValue="">
+          <label htmlFor="wb-nombre">Nombre <span className="req">*</span></label>
+          <input id="wb-nombre" name="nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre y apellido" required autoComplete="name" />
+        </div>
+        <div className="field">
+          <label htmlFor="wb-empresa">Empresa</label>
+          <input id="wb-empresa" name="empresa" value={empresa} onChange={(e) => setEmpresa(e.target.value)} placeholder="Nombre de tu empresa" autoComplete="organization" />
+        </div>
+        <div className="field">
+          <label htmlFor="wb-email">Correo corporativo <span className="req">*</span></label>
+          <input id="wb-email" name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="correo@empresa.com" required autoComplete="email" />
+        </div>
+        <div className="field">
+          <label htmlFor="wb-webinar">¿Qué webinar te interesa?</label>
+          <select id="wb-webinar" name="webinar" value={webinar} onChange={(e) => setWebinar(e.target.value)}>
             <option value="" disabled>Selecciona</option>
-            {WEBINARS.map((w) => <option key={w.title}>{w.title}</option>)}
+            {WEBINARS.map((w) => <option key={w.title} value={w.title}>{w.title}</option>)}
           </select>
         </div>
+        <div aria-hidden="true" style={{ position: "absolute", left: "-10000px", width: 1, height: 1, overflow: "hidden" }}>
+          <label>Sitio web (no llenar)<input type="text" name="website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} /></label>
+        </div>
         <ConsentLine compact />
-        <Button block>Registrarme</Button>
-        <p style={{ fontSize: 11.5, color: "var(--text-tertiary)", margin: 0, textAlign: "center" }}>Integración preparada para atribución por canal.</p>
+        {status === "error" && (
+          <div role="alert" style={{ padding: "8px 12px", borderRadius: 8, background: "var(--status-danger-tint, #fdecec)", color: "var(--status-danger, #b3261e)", fontSize: 13 }}>
+            {errorMsg}
+          </div>
+        )}
+        <button type="submit" className="btn btn--primary btn--block" disabled={status === "sending"}>
+          {status === "sending" ? "Enviando..." : "Registrarme"}
+        </button>
       </div>
     </form>
   );

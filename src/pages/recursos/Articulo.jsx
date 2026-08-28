@@ -1,23 +1,49 @@
 // /recursos/blog/articulo — plantilla de detalle de artículo
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Icon, Button, Section, Reveal, Container, Badge, ConsentLine } from "../../components/ui.jsx";
+import { Icon, Section, Reveal, Container, Badge, ConsentLine } from "../../components/ui.jsx";
 import { Breadcrumbs, CTABand } from "../../components/chrome.jsx";
 import { ARTICULOS } from "./data.js";
 import { Newsletter } from "./Hub.jsx";
 import { trackEvent } from "../../lib/analytics.js";
+import { submitLead, FormSubmitError } from "../../lib/forms.js";
 
 function LeadMagnet() {
-  const [sent, setSent] = useState(false);
+  const renderedAt = useMemo(() => Date.now(), []);
+  const [nombre, setNombre] = useState("");
+  const [email, setEmail] = useState("");
+  const [website, setWebsite] = useState("");
+  const [status, setStatus] = useState("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setStatus("sending");
+    setErrorMsg("");
+    trackEvent("form_submit", { form_type: "lead_magnet_articulo" });
+    try {
+      await submitLead({
+        formType: "lead_magnet_articulo",
+        honeypot: website,
+        renderedAt,
+        fields: { nombre, email, articulo: "omnicanalidad-real" }
+      });
+      setStatus("sent");
+    } catch (err) {
+      setStatus("error");
+      setErrorMsg(err instanceof FormSubmitError ? err.message : "Hubo un problema. Intentá de nuevo.");
+    }
+  };
+
   return (
     <div className="card card--pad-lg" style={{ borderColor: "var(--nz-red-tint-strong)", background: "var(--nz-red-wash)", margin: "34px 0" }}>
-      {sent ? (
+      {status === "sent" ? (
         <div style={{ textAlign: "center" }}>
           <span style={{ width: 54, height: 54, borderRadius: "50%", background: "var(--status-success-tint)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
             <Icon name="Check" size={26} style={{ color: "var(--status-success)" }} />
           </span>
-          <h3 style={{ marginTop: 14, fontSize: 19, fontWeight: 700 }}>Descarga validada</h3>
-          <p style={{ marginTop: 8, fontSize: 14, color: "var(--text-secondary)" }}>El PDF se enviará al conectar esta versión con la plataforma de correo.</p>
+          <h3 style={{ marginTop: 14, fontSize: 19, fontWeight: 700 }}>¡Recibimos tu solicitud!</h3>
+          <p style={{ marginTop: 8, fontSize: 14, color: "var(--text-secondary)" }}>Te enviamos la guía a <strong>{email}</strong> en los próximos minutos.</p>
         </div>
       ) : (
         <>
@@ -27,18 +53,31 @@ function LeadMagnet() {
             Recibe el PDF con el checklist de omnicanalidad para empresas de venta directa. Te lo enviamos por correo.
           </p>
           <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              trackEvent("form_submit", { form_type: "lead_magnet_articulo" });
-              setSent(true);
-            }}
+            onSubmit={handleSubmit}
+            noValidate
             style={{ marginTop: 18, display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr auto", alignItems: "end" }}
             className="leadmagnet-form"
           >
-            <div className="field"><label>Nombre</label><input placeholder="Nombre y apellido" /></div>
-            <div className="field"><label>Correo corporativo</label><input type="email" placeholder="tucorreo@empresa.com" required /></div>
-            <Button><Icon name="Download" size={16} /> Descargar guía</Button>
+            <div className="field">
+              <label htmlFor="lm-nombre">Nombre</label>
+              <input id="lm-nombre" name="nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre y apellido" autoComplete="name" />
+            </div>
+            <div className="field">
+              <label htmlFor="lm-email">Correo corporativo</label>
+              <input id="lm-email" name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tucorreo@empresa.com" required autoComplete="email" />
+            </div>
+            <button type="submit" className="btn btn--primary" disabled={status === "sending"}>
+              <Icon name="Download" size={16} /> {status === "sending" ? "Enviando..." : "Descargar guía"}
+            </button>
+            <div aria-hidden="true" style={{ position: "absolute", left: "-10000px", width: 1, height: 1, overflow: "hidden" }}>
+              <label>Sitio web (no llenar)<input type="text" name="website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} /></label>
+            </div>
             <ConsentLine compact style={{ gridColumn: "1 / -1" }} />
+            {status === "error" && (
+              <div role="alert" style={{ gridColumn: "1 / -1", padding: "8px 12px", borderRadius: 8, background: "var(--status-danger-tint, #fdecec)", color: "var(--status-danger, #b3261e)", fontSize: 13 }}>
+                {errorMsg}
+              </div>
+            )}
           </form>
           <p style={{ marginTop: 12, fontSize: 11.5, color: "var(--text-tertiary)" }}>
             La descarga genera un contacto atribuido al artículo y a su canal de origen. <Link to="/recursos/guias">Ver todas las guías →</Link>

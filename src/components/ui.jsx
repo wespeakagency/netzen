@@ -76,7 +76,7 @@ export function Button({
     onClick?.(event);
   };
   if (to) return <Link to={to} className={cls} style={style} onClick={handleClick} {...rest}>{children}</Link>;
-  if (href) return <a href={href} target="_blank" rel="noreferrer" className={cls} style={style} onClick={handleClick} {...rest}>{children}</a>;
+  if (href) return <a href={href} target="_blank" rel="noopener noreferrer" className={cls} style={style} onClick={handleClick} {...rest}>{children}</a>;
   return <button className={cls} style={style} onClick={handleClick} {...rest}>{children}</button>;
 }
 

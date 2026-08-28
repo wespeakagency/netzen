@@ -97,4 +97,5 @@ export const ROUTES = [
   { path: "/mapa", label: "Mapa del sitio" }
 ];
 
-export const WHATSAPP_URL = "https://wa.me/5213300000000"; // TODO: número comercial oficial
+// Reexport para compatibilidad con imports existentes. La fuente real está en env.js.
+export { WHATSAPP_URL, HAS_WHATSAPP } from "./env.js";
