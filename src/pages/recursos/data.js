@@ -1,38 +1,5 @@
 // Contenido del centro de Recursos (fuente: wireframes fase 1.2)
-export const CATEGORIAS = ["Todas", "Industria", "Omnicanalidad", "Fidelización", "Regulación", "Crecimiento comercial"];
-
-export const ARTICULOS = [
-  {
-    cat: "Omnicanalidad", icon: "Globe", destacado: true,
-    title: "Omnicanalidad real: integrar venta directa, retail y e-commerce en una sola operación",
-    desc: "Qué significa conectar canales y mercados —venta directa, retail, e-commerce, punto de venta y otros— en una operación conectada, y por qué importa para escalar."
-  },
-  {
-    cat: "Crecimiento comercial", icon: "TrendingUp",
-    title: "5 señales de que tu operación está lista para escalar y profesionalizar",
-    desc: "Cómo reconocer cuándo una empresa establecida necesita dejar las hojas de cálculo y migrar a una plataforma configurable."
-  },
-  {
-    cat: "Fidelización", icon: "HeartHandshake",
-    title: "Fidelización de la red de distribuidores: incentivos que retienen sin descapitalizar",
-    desc: "Programas de lealtad, reconocimiento y herramientas propias que mantienen activa a la fuerza comercial."
-  },
-  {
-    cat: "Regulación", icon: "Scale",
-    title: "Marco regulatorio de la venta directa en LATAM: lo que conviene revisar",
-    desc: "Panorama general de cumplimiento por país y por qué separar el cálculo fiscal de la asesoría jurídica."
-  },
-  {
-    cat: "Industria", icon: "Network",
-    title: "Genealogía y plan de compensación: por qué el cálculo correcto sostiene el negocio",
-    desc: "Si el plan está mal calculado hay dos riesgos: pagar de más quiebra la empresa; pagar de menos descapitaliza a la red."
-  },
-  {
-    cat: "Industria", icon: "LineChart",
-    title: "Analítica y predicción: anticipar compras y movilidad de rangos con datos",
-    desc: "Cómo los modelos de escenarios ayudan a anticipar el comportamiento de compra y la movilidad de la red."
-  }
-];
+// Nota: los artículos del blog se consumen desde Substack vía useSubstackFeed.
 
 export const GUIAS = [
   { cat: "Omnicanalidad", icon: "Globe", title: "Checklist de omnicanalidad para venta directa", desc: "Conecta venta directa, retail, e-commerce y punto de venta en una operación.", pages: "12 págs." },

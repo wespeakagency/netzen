@@ -89,7 +89,6 @@ export const NAV = [
 export const ROUTES = [
   { path: "/", label: "Home" },
   ...NAV.flatMap((g) => [{ path: g.path, label: g.label + " (hub)" }, ...g.children.map((c) => ({ path: c.path, label: c.label, group: g.label }))]),
-  { path: "/recursos/blog/articulo", label: "Artículo (plantilla)", group: "Recursos" },
   { path: "/contacto", label: "Contacto · Agenda tu diagnóstico" },
   { path: "/contacto/demo", label: "Demo protegido" },
   { path: "/legal/privacidad", label: "Aviso de privacidad", group: "Legal" },

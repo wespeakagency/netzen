@@ -22,7 +22,6 @@ import PorModelo from "./pages/soluciones/PorModelo.jsx";
 
 import RecursosHub from "./pages/recursos/Hub.jsx";
 import Blog from "./pages/recursos/Blog.jsx";
-import Articulo from "./pages/recursos/Articulo.jsx";
 import Casos from "./pages/recursos/Casos.jsx";
 import Guias from "./pages/recursos/Guias.jsx";
 import Webinars from "./pages/recursos/Webinars.jsx";
@@ -69,7 +68,6 @@ export default function App() {
 
           <Route path="/recursos" element={<RecursosHub />} />
           <Route path="/recursos/blog" element={<Blog />} />
-          <Route path="/recursos/blog/articulo" element={<Articulo />} />
           <Route path="/recursos/casos" element={<Casos />} />
           <Route path="/recursos/guias" element={<Guias />} />
           <Route path="/recursos/webinars" element={<Webinars />} />

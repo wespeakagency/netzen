@@ -11,8 +11,7 @@ const FORMATOS = [
   { to: "/recursos/casos", icon: "Trophy", title: "Casos de éxito", badge: ["warning", "Con permiso del cliente"], desc: "Testimonios y relaciones de 10–15 años con clientes como evidencia de resultados." },
   { to: "/recursos/guias", icon: "FileText", title: "Guías y descargables", badge: ["accent", "Lead magnet"], desc: "Checklists, plantillas y guías en PDF: la experiencia queda preparada para atribución por canal." },
   { to: "/recursos/glosario", icon: "BookMarked", title: "Glosario", badge: null, desc: "Términos de la industria de la A a la Z para SEO y claridad: omnicanalidad, fidelización, genealogía." },
-  { to: "/recursos/webinars", icon: "Video", title: "Webinars y eventos", badge: null, desc: "Grabaciones, sesiones en vivo y vínculo al evento de industria 2027." },
-  { to: "/recursos/blog/articulo", icon: "Star", title: "Último artículo destacado", badge: ["info", "Lectura recomendada"], desc: "Omnicanalidad real: integrar venta directa, retail y e-commerce en una sola operación." }
+  { to: "/recursos/webinars", icon: "Video", title: "Webinars y eventos", badge: null, desc: "Grabaciones, sesiones en vivo y vínculo al evento de industria 2027." }
 ];
 
 function Newsletter({ compact }) {
