@@ -1,10 +1,25 @@
 // /soluciones/:slug — plantilla de recorrido por situación (A/B/C/D/E)
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Link, useParams, Navigate } from "react-router-dom";
 import { Icon, Button, Section, SectionHeading, Reveal, CheckLine, Badge, ConsentLine } from "../../components/ui.jsx";
 import { PageHero, CTABand } from "../../components/chrome.jsx";
 import { RECORRIDOS } from "./data.js";
 import { trackEvent } from "../../lib/analytics.js";
+import { submitLead, FormSubmitError } from "../../lib/forms.js";
+
+// Mapea un label de campo dinámico al key estándar que espera el backend.
+// Si no matchea ninguno conocido, cae en "notes" (se concatena todo).
+function labelToFieldKey(label) {
+  const l = label.toLowerCase();
+  if (l.includes("nombre")) return "nombre";
+  if (l.includes("correo") || l.includes("email")) return "email";
+  if (l.includes("whatsapp") || l.includes("teléfono") || l.includes("telefono") || l.includes("celular")) return "whatsapp";
+  if (l.includes("empresa") || l.includes("compañía") || l.includes("compania") || l.includes("organización") || l.includes("organizacion")) return "empresa";
+  if (l.includes("país") || l.includes("pais")) return "pais";
+  if (l.includes("modelo")) return "modelo";
+  if (l.includes("tamaño") || l.includes("tamanio")) return "tamanio";
+  return "mensaje";
+}
 
 const CORE_COLOR = { Consulting: "info", Plataforma: "accent", Academy: "success", Cuenta: "neutral", Comunidad: "neutral" };
 
@@ -27,32 +42,91 @@ function CaminoTimeline({ camino }) {
 }
 
 function FormRecorrido({ form, slug }) {
-  const [sent, setSent] = useState(false);
-  if (sent) {
+  const renderedAt = useMemo(() => Date.now(), []);
+  const initial = useMemo(() => {
+    const acc = { website: "" };
+    form.fields.forEach((f) => { acc[f.label] = ""; });
+    return acc;
+  }, [form.fields]);
+  const [values, setValues] = useState(initial);
+  const [status, setStatus] = useState("idle"); // idle | sending | sent | error
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const update = (label) => (e) => setValues((prev) => ({ ...prev, [label]: e.target.value }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setStatus("sending");
+    setErrorMsg("");
+
+    // Consolidamos los inputs dinámicos en los keys estándar del backend.
+    // Campos que caen en "mensaje" se concatenan con etiqueta.
+    const bucket = { nombre: "", email: "", whatsapp: "", empresa: "", pais: "", modelo: "", tamanio: "" };
+    const extras = [];
+    form.fields.forEach((f) => {
+      const raw = String(values[f.label] || "").trim();
+      if (!raw) return;
+      const key = labelToFieldKey(f.label);
+      if (key === "mensaje") {
+        extras.push(`${f.label}: ${raw}`);
+      } else if (!bucket[key]) {
+        bucket[key] = raw;
+      } else {
+        extras.push(`${f.label}: ${raw}`);
+      }
+    });
+
+    trackEvent("form_submit", { form_type: "solucion", route: slug });
+
+    try {
+      await submitLead({
+        formType: "solucion",
+        honeypot: values.website,
+        renderedAt,
+        fields: {
+          ...bucket,
+          situacion: slug,
+          mensaje: extras.join(" · ")
+        }
+      });
+      setStatus("sent");
+    } catch (err) {
+      setStatus("error");
+      setErrorMsg(err instanceof FormSubmitError ? err.message : "Hubo un problema al enviar. Intentá de nuevo.");
+    }
+  };
+
+  const resetForm = () => {
+    setValues(initial);
+    setStatus("idle");
+    setErrorMsg("");
+  };
+
+  if (status === "sent") {
     return (
       <div className="card card--pad-lg" style={{ textAlign: "center" }}>
         <span style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--status-success-tint)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
           <Icon name="Check" size={30} strokeWidth={2.4} style={{ color: "var(--status-success)" }} />
         </span>
-        <h3 style={{ marginTop: 18, fontSize: 22, fontWeight: 700 }}>Solicitud validada</h3>
+        <h3 style={{ marginTop: 18, fontSize: 22, fontWeight: 700 }}>¡Recibimos tu solicitud!</h3>
         <p style={{ marginTop: 10, fontSize: 15, lineHeight: 1.6, color: "var(--text-secondary)" }}>
-          La experiencia de envío quedó completa. Al conectar esta versión con el CRM, un consultor podrá dar seguimiento por WhatsApp o correo.
+          Un consultor te dará seguimiento por WhatsApp o correo en horario hábil.
         </p>
         <div style={{ marginTop: 22, display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-          <Button variant="secondary" onClick={() => setSent(false)}>Enviar otra solicitud</Button>
+          <Button variant="secondary" onClick={resetForm}>Enviar otra solicitud</Button>
           <Button variant="ghost" to="/soluciones">Ver otros recorridos</Button>
         </div>
       </div>
     );
   }
+
+  const sending = status === "sending";
+
   return (
     <form
       className="card card--pad-lg"
-      onSubmit={(e) => {
-        e.preventDefault();
-        trackEvent("form_submit", { form_type: "solucion", route: slug });
-        setSent(true);
-      }}
+      onSubmit={handleSubmit}
+      noValidate
       style={{ boxShadow: "var(--shadow-md)" }}
     >
       <div style={{ display: "grid", gap: 18 }}>
@@ -60,14 +134,29 @@ function FormRecorrido({ form, slug }) {
           <div className="field" key={f.label}>
             <label>{f.label} {f.required && <span className="req">*</span>}</label>
             {f.textarea
-              ? <textarea placeholder={f.placeholder} required={f.required} />
-              : <input type={f.type || "text"} placeholder={f.placeholder} required={f.required} />}
+              ? <textarea placeholder={f.placeholder} required={f.required} value={values[f.label]} onChange={update(f.label)} />
+              : <input type={f.type || "text"} placeholder={f.placeholder} required={f.required} value={values[f.label]} onChange={update(f.label)} />}
           </div>
         ))}
+
+        {/* Honeypot */}
+        <div aria-hidden="true" style={{ position: "absolute", left: "-10000px", width: 1, height: 1, overflow: "hidden" }}>
+          <label>Sitio web (no llenar)<input type="text" name="website" tabIndex={-1} autoComplete="off" value={values.website} onChange={update("website")} /></label>
+        </div>
+
         <ConsentLine />
-        <Button size="lg" block onClick={undefined}>{form.submit}</Button>
+
+        {status === "error" && (
+          <div role="alert" style={{ padding: "10px 14px", borderRadius: 8, background: "var(--status-danger-tint, #fdecec)", color: "var(--status-danger, #b3261e)", fontSize: 13.5 }}>
+            {errorMsg}
+          </div>
+        )}
+
+        <button type="submit" className="btn btn--primary btn--lg btn--block" disabled={sending}>
+          {sending ? "Enviando..." : form.submit}
+        </button>
         <p style={{ fontSize: 12, color: "var(--text-tertiary)", textAlign: "center", margin: 0 }}>
-          Integración preparada para atribución «Soluciones · {slug}». La conexión final al CRM está pendiente.
+          Atribución «Soluciones · {slug}» · registramos el origen para darte el seguimiento correcto.
         </p>
       </div>
     </form>

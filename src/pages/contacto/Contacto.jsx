@@ -19,6 +19,32 @@ const MODELOS = ["Venta directa", "Multinivel", "Retail", "Franquicias", "E-comm
 const PAISES = ["México", "Colombia", "Perú", "Ecuador", "Estados Unidos", "Otro"];
 const TAMANIOS = ["Menos de 100 distribuidores", "100 – 1,000", "1,000 – 10,000", "Más de 10,000"];
 
+// Inputs de calificación · alimentan el scoring del CRM (Fase 2).
+// Opcionales para no meter fricción, pero cuanto más se llenen mejor prioriza el equipo comercial.
+// NOTA: los strings deben conservar las keywords que matchea el Apps Script (decisor principal, evaluando, etc.).
+const DECISION_ROLES = [
+  "Tomo la decisión final",
+  "Decido con mi equipo",
+  "Recomiendo, otro decide",
+  "Investigo para el equipo"
+];
+const BUDGET_STAGES = [
+  "Ya asignado",
+  "Evaluando este año",
+  "Sin presupuesto aún"
+];
+const TIMELINES = [
+  "0-3 meses",
+  "3-6 meses",
+  "6-12 meses",
+  "Sin urgencia"
+];
+const IMPLEMENTATION_READINESS = [
+  "Equipo interno",
+  "Partner tecnológico",
+  "Acompañamiento completo"
+];
+
 const INITIAL = {
   nombre: "",
   empresa: "",
@@ -27,6 +53,10 @@ const INITIAL = {
   pais: "",
   modelo: "",
   tamanio: "",
+  decision_role: "",
+  budget_readiness: "",
+  timeline: "",
+  implementation_readiness: "",
   mensaje: "",
   website: "" // honeypot
 };
@@ -62,6 +92,10 @@ function FormularioContacto({ demo }) {
           modelo: values.modelo,
           tamanio: demo ? values.tamanio : "",
           situacion,
+          decision_role: values.decision_role,
+          budget_readiness: values.budget_readiness,
+          timeline: values.timeline,
+          implementation_readiness: values.implementation_readiness,
           mensaje: values.mensaje
         }
       });
@@ -173,6 +207,47 @@ function FormularioContacto({ demo }) {
               <span style={{ fontSize: 13.5, lineHeight: 1.4 }}>{s.label}</span>
             </button>
           ))}
+        </div>
+      </div>
+
+      <div style={{ marginTop: 22 }}>
+        <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 6 }}>
+          {demo ? "Para preparar mejor tu demo" : "Cuéntanos un poco más de tu contexto"}
+        </div>
+        <p style={{ fontSize: 12.5, color: "var(--text-tertiary)", margin: "0 0 12px" }}>
+          {demo
+            ? "Estos datos nos permiten llegar con propuestas específicas a tu situación. Contesta solo lo que aplique."
+            : "Nos ayuda a llegar a la primera llamada con propuestas más aterrizadas. Puedes dejar en blanco lo que no aplique."}
+        </p>
+        <div className="contact-grid">
+          <div className="field">
+            <label htmlFor="c-role">Tu rol en la decisión</label>
+            <select id="c-role" name="decision_role" value={values.decision_role} onChange={update("decision_role")}>
+              <option value="">Sin especificar</option>
+              {DECISION_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
+          <div className="field">
+            <label htmlFor="c-budget">Presupuesto</label>
+            <select id="c-budget" name="budget_readiness" value={values.budget_readiness} onChange={update("budget_readiness")}>
+              <option value="">Sin especificar</option>
+              {BUDGET_STAGES.map((b) => <option key={b} value={b}>{b}</option>)}
+            </select>
+          </div>
+          <div className="field">
+            <label htmlFor="c-timeline">Ventana de decisión</label>
+            <select id="c-timeline" name="timeline" value={values.timeline} onChange={update("timeline")}>
+              <option value="">Sin especificar</option>
+              {TIMELINES.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+          <div className="field">
+            <label htmlFor="c-impl">Recursos de implementación</label>
+            <select id="c-impl" name="implementation_readiness" value={values.implementation_readiness} onChange={update("implementation_readiness")}>
+              <option value="">Sin especificar</option>
+              {IMPLEMENTATION_READINESS.map((i) => <option key={i} value={i}>{i}</option>)}
+            </select>
+          </div>
         </div>
       </div>
 
