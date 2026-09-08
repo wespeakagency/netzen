@@ -65,11 +65,11 @@ function DescargaForm() {
     <form onSubmit={handleSubmit} noValidate style={{ display: "grid", gap: 14 }}>
       <div className="field">
         <label htmlFor="dg-nombre">Nombre <span className="req">*</span></label>
-        <input id="dg-nombre" name="nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre y apellido" required autoComplete="name" />
+        <input id="dg-nombre" name="nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="María González" required autoComplete="name" />
       </div>
       <div className="field">
         <label htmlFor="dg-email">Correo corporativo <span className="req">*</span></label>
-        <input id="dg-email" name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tucorreo@empresa.com" required autoComplete="email" />
+        <input id="dg-email" name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nombre@empresa.com" required autoComplete="email" />
       </div>
       <div className="field">
         <label htmlFor="dg-empresa">Empresa</label>

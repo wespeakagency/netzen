@@ -58,7 +58,7 @@ function RegistroForm() {
       <div style={{ display: "grid", gap: 14 }}>
         <div className="field">
           <label htmlFor="wb-nombre">Nombre <span className="req">*</span></label>
-          <input id="wb-nombre" name="nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre y apellido" required autoComplete="name" />
+          <input id="wb-nombre" name="nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="María González" required autoComplete="name" />
         </div>
         <div className="field">
           <label htmlFor="wb-empresa">Empresa</label>
@@ -66,7 +66,7 @@ function RegistroForm() {
         </div>
         <div className="field">
           <label htmlFor="wb-email">Correo corporativo <span className="req">*</span></label>
-          <input id="wb-email" name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="correo@empresa.com" required autoComplete="email" />
+          <input id="wb-email" name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nombre@empresa.com" required autoComplete="email" />
         </div>
         <div className="field">
           <label htmlFor="wb-webinar">¿Qué webinar te interesa?</label>

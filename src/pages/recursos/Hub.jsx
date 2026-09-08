@@ -64,12 +64,12 @@ function Newsletter({ compact }) {
             {!compact && (
               <div className="field">
                 <label htmlFor="nl-nombre">Nombre</label>
-                <input id="nl-nombre" name="nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre y apellido" autoComplete="name" />
+                <input id="nl-nombre" name="nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="María González" autoComplete="name" />
               </div>
             )}
             <div className="field">
               <label htmlFor="nl-email">Correo corporativo <span className="req">*</span></label>
-              <input id="nl-email" name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tucorreo@empresa.com" required autoComplete="email" />
+              <input id="nl-email" name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nombre@empresa.com" required autoComplete="email" />
             </div>
             <div aria-hidden="true" style={{ position: "absolute", left: "-10000px", width: 1, height: 1, overflow: "hidden" }}>
               <label>Sitio web (no llenar)<input type="text" name="website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} /></label>

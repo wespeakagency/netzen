@@ -35,9 +35,9 @@ export const RECORRIDOS = {
       title: "Déjanos tus datos y te contactamos para entender tu caso",
       note: "Sin compromiso y sin precio en este primer paso.",
       fields: [
-        { label: "Nombre completo", placeholder: "Tu nombre", required: true },
-        { label: "Correo electrónico", placeholder: "nombre@correo.com", type: "email", required: true },
-        { label: "Teléfono / WhatsApp", placeholder: "+52 …", type: "tel" },
+        { label: "Nombre completo", placeholder: "María González", required: true },
+        { label: "Correo electrónico", placeholder: "nombre@empresa.com", type: "email", required: true },
+        { label: "Teléfono / WhatsApp", placeholder: "+52 33 1234 5678", type: "tel" },
         { label: "¿Qué te gustaría lograr?", placeholder: "Cuéntanos brevemente tu idea o tu duda", textarea: true }
       ],
       submit: "Agenda tu diagnóstico"

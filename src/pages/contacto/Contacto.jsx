@@ -145,7 +145,7 @@ function FormularioContacto({ demo }) {
       <div className="contact-grid">
         <div className="field">
           <label htmlFor="c-nombre">{demo ? "Nombre y cargo" : "Nombre completo"} <span className="req">*</span></label>
-          <input id="c-nombre" name="nombre" value={values.nombre} onChange={update("nombre")} placeholder={demo ? "Nombre · Dirección / Operaciones" : "Ej. Ana Torres"} required autoComplete="name" />
+          <input id="c-nombre" name="nombre" value={values.nombre} onChange={update("nombre")} placeholder={demo ? "Nombre · Dirección / Operaciones" : "María González"} required autoComplete="name" />
         </div>
         <div className="field">
           <label htmlFor="c-empresa">Empresa <span className="req">*</span></label>
@@ -158,7 +158,7 @@ function FormularioContacto({ demo }) {
         </div>
         <div className="field">
           <label htmlFor="c-email">Email {demo ? "corporativo" : ""} <span className="req">*</span></label>
-          <input id="c-email" name="email" type="email" value={values.email} onChange={update("email")} placeholder="ana@empresa.com" required autoComplete="email" />
+          <input id="c-email" name="email" type="email" value={values.email} onChange={update("email")} placeholder="nombre@empresa.com" required autoComplete="email" />
         </div>
         <div className="field">
           <label htmlFor="c-pais">País</label>
