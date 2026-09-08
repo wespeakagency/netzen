@@ -1,59 +1,162 @@
 // /recursos/blog · feed de Substack (Netzen Publication)
-import React from "react";
-import { Icon, Button, Section, SectionHeading, Reveal, Container } from "../../components/ui.jsx";
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import { Icon, Section, SectionHeading, Reveal } from "../../components/ui.jsx";
 import { PageHero, CTABand } from "../../components/chrome.jsx";
 import { Newsletter } from "./Hub.jsx";
 import { useSubstackFeed, SUBSTACK_URL } from "../../hooks/useSubstackFeed.js";
 import { trackEvent } from "../../lib/analytics.js";
 
-function formatDate(iso) {
-  try {
-    return new Date(iso).toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" });
-  } catch {
-    return "";
-  }
+function PostCard({ post }) {
+  return (
+    <a
+      href={post.link}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={() => trackEvent("blog_post_click", { title: post.title, link: post.link })}
+      className="card card--hover"
+      style={{ display: "flex", flexDirection: "column", gap: 0, color: "inherit", height: "100%", padding: 0, overflow: "hidden" }}
+    >
+      <div style={{
+        aspectRatio: "16/9",
+        background: post.thumbnail
+          ? `center / cover no-repeat url(${post.thumbnail})`
+          : "linear-gradient(145deg, var(--nz-red-wash) 0%, var(--nz-red-tint) 66%, var(--nz-blue-tint) 100%)",
+        display: "flex", alignItems: "center", justifyContent: "center", position: "relative"
+      }}>
+        {!post.thumbnail && (
+          <span className="bubble bubble--lg" style={{ background: "rgba(255,255,255,0.85)" }}>
+            <Icon name="Newspaper" size={26} />
+          </span>
+        )}
+      </div>
+      <div style={{ padding: "20px 22px 22px", display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
+        <h3 style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.35 }}>{post.title}</h3>
+        <span style={{ marginTop: "auto", fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 13.5, color: "var(--nz-red)" }}>
+          Leer en Substack
+        </span>
+      </div>
+    </a>
+  );
 }
 
-function PostCard({ post, i }) {
+function usePerView() {
+  const [perView, setPerView] = useState(3);
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      setPerView(w < 720 ? 1 : w < 1024 ? 2 : 3);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+  return perView;
+}
+
+function PostsCarousel({ posts }) {
+  const scrollerRef = useRef(null);
+  const perView = usePerView();
+  const [page, setPage] = useState(0);
+  const pages = Math.max(1, Math.ceil(posts.length / perView));
+
+  const scrollToPage = useCallback((i) => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    const clamped = Math.max(0, Math.min(pages - 1, i));
+    const target = (scroller.scrollWidth / pages) * clamped;
+    scroller.scrollTo({ left: target, behavior: "smooth" });
+  }, [pages]);
+
+  const onScroll = () => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    const perPage = scroller.scrollWidth / pages;
+    const p = Math.round(scroller.scrollLeft / perPage);
+    if (p !== page) setPage(p);
+  };
+
+  useEffect(() => {
+    setPage(0);
+    scrollerRef.current?.scrollTo({ left: 0 });
+  }, [perView]);
+
+  const showControls = pages > 1;
+  const gap = 24;
+
   return (
-    <Reveal delay={(i % 3) * 80} style={{ height: "100%" }}>
-      <a
-        href={post.link}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={() => trackEvent("blog_post_click", { title: post.title, link: post.link })}
-        className="card card--hover"
-        style={{ display: "flex", flexDirection: "column", gap: 0, color: "inherit", height: "100%", padding: 0, overflow: "hidden" }}
+    <div style={{ position: "relative", marginTop: 34 }}>
+      <div
+        ref={scrollerRef}
+        onScroll={onScroll}
+        className="blog-carousel-scroller"
+        style={{
+          display: "flex",
+          gap,
+          overflowX: "auto",
+          scrollSnapType: "x mandatory",
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+          paddingBottom: 4,
+        }}
       >
-        <div style={{
-          aspectRatio: "16/8",
-          background: post.thumbnail
-            ? `center / cover no-repeat url(${post.thumbnail})`
-            : "linear-gradient(145deg, var(--nz-red-wash) 0%, var(--nz-red-tint) 66%, var(--nz-blue-tint) 100%)",
-          display: "flex", alignItems: "center", justifyContent: "center", position: "relative"
-        }}>
-          {!post.thumbnail && (
-            <span className="bubble bubble--lg" style={{ background: "rgba(255,255,255,0.85)" }}>
-              <Icon name="Newspaper" size={26} />
-            </span>
-          )}
-        </div>
-        <div style={{ padding: "20px 22px 22px", display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
-          <span style={{ fontSize: 12, color: "var(--text-tertiary)", fontFamily: "var(--font-display)", fontWeight: 600 }}>
-            {formatDate(post.pubDate)}
-          </span>
-          <h3 style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.35 }}>{post.title}</h3>
-          {post.excerpt && (
-            <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "var(--text-secondary)" }}>
-              {post.excerpt}...
-            </p>
-          )}
-          <span style={{ marginTop: "auto", display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 13.5, color: "var(--nz-red)" }}>
-            Leer en Substack <Icon name="ExternalLink" size={14} />
-          </span>
-        </div>
-      </a>
-    </Reveal>
+        {posts.map((post) => (
+          <div
+            key={post.guid}
+            style={{
+              flex: `0 0 calc((100% - ${(perView - 1) * gap}px) / ${perView})`,
+              scrollSnapAlign: "start",
+              minWidth: 0,
+            }}
+          >
+            <PostCard post={post} />
+          </div>
+        ))}
+      </div>
+
+      {showControls && (
+        <>
+          <button
+            type="button"
+            onClick={() => scrollToPage(page - 1)}
+            disabled={page === 0}
+            aria-label="Anterior"
+            className="blog-carousel-arrow blog-carousel-arrow--prev"
+          >
+            <Icon name="ChevronLeft" size={20} />
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollToPage(page + 1)}
+            disabled={page === pages - 1}
+            aria-label="Siguiente"
+            className="blog-carousel-arrow blog-carousel-arrow--next"
+          >
+            <Icon name="ChevronRight" size={20} />
+          </button>
+          <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 22 }}>
+            {Array.from({ length: pages }).map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => scrollToPage(i)}
+                aria-label={`Ir a página ${i + 1}`}
+                aria-current={i === page ? "true" : undefined}
+                style={{
+                  width: i === page ? 22 : 8,
+                  height: 8,
+                  borderRadius: 999,
+                  border: "none",
+                  cursor: "pointer",
+                  background: i === page ? "var(--nz-red)" : "var(--border-default)",
+                  transition: "width 200ms ease, background 200ms ease",
+                  padding: 0,
+                }}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -62,9 +165,8 @@ function LoadingSkeleton() {
     <div className="grid-3" style={{ marginTop: 34 }}>
       {[0, 1, 2].map((i) => (
         <div key={i} className="card" style={{ padding: 0, overflow: "hidden" }}>
-          <div style={{ aspectRatio: "16/8", background: "var(--nz-red-wash)" }} />
+          <div style={{ aspectRatio: "16/9", background: "var(--nz-red-wash)" }} />
           <div style={{ padding: "20px 22px 22px", display: "grid", gap: 10 }}>
-            <div style={{ height: 12, width: "40%", background: "var(--border-default)", borderRadius: 4 }} />
             <div style={{ height: 16, background: "var(--border-default)", borderRadius: 4 }} />
             <div style={{ height: 16, width: "80%", background: "var(--border-default)", borderRadius: 4 }} />
           </div>
@@ -148,7 +250,7 @@ function SubstackEmbed() {
 }
 
 export default function Blog() {
-  const { posts, status } = useSubstackFeed({ limit: 6 });
+  const { posts, status } = useSubstackFeed({ limit: 12 });
 
   return (
     <>
@@ -165,9 +267,7 @@ export default function Blog() {
         {status === "empty" && <EmptyState />}
         {status === "ok" && (
           <>
-            <div className="grid-3 anim-fade-up" style={{ marginTop: 8 }}>
-              {posts.map((post, i) => <PostCard post={post} i={i} key={post.guid} />)}
-            </div>
+            <PostsCarousel posts={posts} />
             <div style={{ marginTop: 34, display: "flex", justifyContent: "center" }}>
               <a
                 href={SUBSTACK_URL}
@@ -176,7 +276,7 @@ export default function Blog() {
                 className="btn btn--secondary"
                 onClick={() => trackEvent("blog_substack_click", { source: "view_all" })}
               >
-                Ver todas las publicaciones en Substack <Icon name="ExternalLink" size={14} />
+                Ver todas las publicaciones en Substack
               </a>
             </div>
           </>
