@@ -4,6 +4,7 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 import { NAV, ROUTES, WHATSAPP_URL, HAS_WHATSAPP } from "../lib/nav.js";
 import { Icon, Button, Container } from "./ui.jsx";
 import { trackEvent } from "../lib/analytics.js";
+import { openConsentBanner } from "./ConsentBanner.jsx";
 import isotipo from "../assets/netzen-isotipo-red.png";
 import logoVerticalWhite from "../assets/netzen-vertical-white.png";
 
@@ -20,6 +21,14 @@ export function Logo({ height = 30, white }) {
     </Link>
   );
 }
+
+const LANGUAGES = [
+  { code: "es", label: "Español", active: true },
+  { code: "en", label: "English", active: false },
+  { code: "pt", label: "Português", active: false },
+  { code: "fr", label: "Français", active: false },
+  { code: "tr", label: "Türkçe", active: false }
+];
 
 function LanguageStatus({ mobile = false }) {
   const [open, setOpen] = useState(false);
@@ -38,21 +47,22 @@ function LanguageStatus({ mobile = false }) {
         }}
       >
         <Icon name="Globe" size={14} />
-        <span className="language-status__full">ES · Español</span>
-        <span className="language-status__short" aria-hidden="true">ES</span>
+        <span className="language-status__code">ES</span>
         <Icon name="ChevronDown" size={13} />
       </button>
       {open && (
         <div className="language-status__panel" role="dialog" aria-label="Disponibilidad de idiomas">
-          <div className="language-option is-active">
-            <span>Español</span>
-            <strong>Disponible</strong>
-          </div>
-          <div className="language-option is-disabled" aria-disabled="true">
-            <span>English</span>
-            <strong>Próximamente</strong>
-          </div>
-          <p>La primera entrega es en español. Inglés y otros mercados quedan sujetos a traducción y validación.</p>
+          {LANGUAGES.map((lang) => (
+            <div
+              key={lang.code}
+              className={`language-option ${lang.active ? "is-active" : "is-disabled"}`}
+              aria-disabled={!lang.active}
+            >
+              <span>{lang.label}</span>
+              <strong>{lang.active ? "Disponible" : "Próximamente"}</strong>
+            </div>
+          ))}
+          
         </div>
       )}
     </div>
@@ -76,13 +86,6 @@ export function SiteHeader() {
 
   return (
     <div style={{ position: "sticky", top: 0, zIndex: 100 }}>
-      <div className="utilbar">
-        <div className="utilbar__in">
-          <a href="#" className="strong" onClick={(e) => e.preventDefault()}>Acceso clientes · Oficina Virtual</a>
-          <a href="#" onClick={(e) => e.preventDefault()}>Soporte</a>
-          <span style={{ marginLeft: "auto" }}><LanguageStatus /></span>
-        </div>
-      </div>
       <header className={`hdr ${scrolled ? "is-scrolled" : ""}`}>
         <div className="hdr__in">
           <Logo height={30} />
@@ -114,7 +117,8 @@ export function SiteHeader() {
               </div>
             ))}
           </nav>
-          <div className="hdr__cta" style={{ marginLeft: "auto" }}>
+          <div className="hdr__cta" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
+            <LanguageStatus />
             <Button size="sm" to="/contacto">Agenda tu diagnóstico</Button>
           </div>
           <button className="hdr__burger" aria-label="Abrir menú" onClick={() => setMobileOpen(true)}>
@@ -292,6 +296,17 @@ export function SiteFooter() {
           <span>© Netzen 2026 · NETZEN S.A. de C.V.</span>
           <Link to="/legal/privacidad" style={{ fontSize: 12.5, lineHeight: "inherit" }}>Aviso de privacidad</Link>
           <Link to="/legal/terminos" style={{ fontSize: 12.5, lineHeight: "inherit" }}>Términos y condiciones</Link>
+          <button
+            type="button"
+            onClick={openConsentBanner}
+            style={{
+              background: "transparent", border: 0, padding: 0, cursor: "pointer",
+              color: "inherit", font: "inherit", fontSize: 12.5, lineHeight: "inherit",
+              textDecoration: "underline"
+            }}
+          >
+            Cookies
+          </button>
           <Link to="/mapa" style={{ fontSize: 12.5, lineHeight: "inherit" }}>Mapa del sitio</Link>
           <span style={{ marginLeft: "auto" }}>Hecho en México · desde 1996</span>
         </div>

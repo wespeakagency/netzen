@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { SiteHeader, SiteFooter, FloatingActions, ScrollToTop } from "./components/chrome.jsx";
 import { useRevealObserver } from "./components/ui.jsx";
+import ConsentBanner from "./components/ConsentBanner.jsx";
 import { trackPageView } from "./lib/analytics.js";
 
 import Home from "./pages/Home.jsx";
@@ -92,6 +93,7 @@ export default function App() {
       </main>
       <SiteFooter />
       <FloatingActions />
+      <ConsentBanner />
     </>
   );
 }
