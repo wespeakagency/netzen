@@ -4,8 +4,9 @@ import { Link } from "react-router-dom";
 import { Icon, Button, Section, SectionHeading, Reveal, Badge, Stat } from "../../components/ui.jsx";
 import { PageHero, CTABand } from "../../components/chrome.jsx";
 import isotipo from "../../assets/netzen-isotipo-red.png";
+import { isRouteEnabled } from "../../lib/featureFlags.js";
 
-const SUBPAGES = [
+const ALL_SUBPAGES = [
   { to: "/nosotros/historia", icon: "History", title: "Historia", desc: "De la computadora en el bochito a la última década de inteligencia artificial: el recorrido que respalda lo que hacemos hoy." },
   { to: "/nosotros/por-que-netzen", icon: "BadgeCheck", title: "Por qué Netzen", desc: "Ecosistema integral, consultoría incluida, omnicanalidad, multipaís y trato humano. Lo que nos hace distintos." },
   { to: "/nosotros/equipo", icon: "Users", title: "Liderazgo y equipo", desc: "Las personas detrás de la plataforma: experiencia técnica y de industria como respaldo de autoridad." },
@@ -13,6 +14,7 @@ const SUBPAGES = [
   { to: "/nosotros/mision-vision-valores", icon: "Target", title: "Misión, visión y valores", desc: "Lo que nos mueve y los principios con los que operamos." },
   { to: "/nosotros/por-que-netzen", icon: "Award", title: "Certificaciones", desc: "Certificaciones y estándares de calidad del software. Se detallan dentro de «Por qué Netzen»." }
 ];
+const SUBPAGES = ALL_SUBPAGES.filter((s) => isRouteEnabled(s.to));
 
 function TimelineMini() {
   const hitos = [
@@ -95,9 +97,11 @@ export default function NosotrosHub() {
         <SectionHeading eyebrow="El ecosistema" title="Cómo se conecta con los otros núcleos" />
         <div className="grid-2" style={{ marginTop: 32 }}>
           {[
-            { icon: "Video", text: <><b>Nosotros · Eventos</b> → los encuentros de industria reviven como contenido en Recursos · Webinars y se vinculan al evento 2027.</>, to: "/recursos/webinars", label: "Ver Webinars" },
+            (isRouteEnabled("/nosotros/eventos") && isRouteEnabled("/recursos/webinars"))
+              ? { icon: "Video", text: <><b>Nosotros · Eventos</b> → los encuentros de industria reviven como contenido en Recursos · Webinars y se vinculan al evento 2027.</>, to: "/recursos/webinars", label: "Ver Webinars" }
+              : null,
             { icon: "Route", text: <><b>Nosotros · Historia y equipo</b> → la trayectoria sostiene el argumento de Soluciones: por qué confiar la operación a Netzen frente a una empresa nueva.</>, to: "/soluciones", label: "Ver Soluciones" }
-          ].map((c, i) => (
+          ].filter(Boolean).map((c, i) => (
             <Reveal key={i} delay={i * 90}>
               <div className="card" style={{ height: "100%", display: "flex", flexDirection: "column", gap: 14 }}>
                 <div style={{ display: "flex", gap: 14 }}>

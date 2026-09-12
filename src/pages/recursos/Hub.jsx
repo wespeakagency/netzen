@@ -5,14 +5,32 @@ import { Icon, Button, Section, SectionHeading, Reveal, Badge, ConsentLine } fro
 import { PageHero, CTABand } from "../../components/chrome.jsx";
 import { trackEvent } from "../../lib/analytics.js";
 import { submitLead, FormSubmitError } from "../../lib/forms.js";
+import { isRouteEnabled } from "../../lib/featureFlags.js";
 
-const FORMATOS = [
+const ALL_FORMATOS = [
   { to: "/recursos/blog", icon: "Newspaper", title: "Blog", badge: null, desc: "Artículos sobre industria, omnicanalidad, fidelización, regulación y crecimiento comercial." },
   { to: "/recursos/casos", icon: "Trophy", title: "Casos de éxito", badge: ["warning", "Con permiso del cliente"], desc: "Testimonios y relaciones de 10–15 años con clientes como evidencia de resultados." },
   { to: "/recursos/guias", icon: "FileText", title: "Guías y descargables", badge: ["accent", "Lead magnet"], desc: "Checklists, plantillas y guías en PDF: la experiencia queda preparada para atribución por canal." },
   { to: "/recursos/glosario", icon: "BookMarked", title: "Glosario", badge: null, desc: "Términos de la industria de la A a la Z para SEO y claridad: omnicanalidad, fidelización, genealogía." },
   { to: "/recursos/webinars", icon: "Video", title: "Webinars y eventos", badge: null, desc: "Grabaciones, sesiones en vivo y vínculo al evento de industria 2027." }
 ];
+const FORMATOS = ALL_FORMATOS.filter((f) => isRouteEnabled(f.to));
+
+function FormatoCard({ f }) {
+  return (
+    <Link to={f.to} className="card card--hover" style={{ display: "flex", flexDirection: "column", gap: 12, color: "inherit", height: "100%" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+        <span className="bubble"><Icon name={f.icon} size={21} /></span>
+        {f.badge && <Badge tone={f.badge[0]}>{f.badge[1]}</Badge>}
+      </div>
+      <h3 style={{ fontSize: 18, fontWeight: 700 }}>{f.title}</h3>
+      <p style={{ fontSize: 14, lineHeight: 1.6, color: "var(--text-secondary)" }}>{f.desc}</p>
+      <span style={{ marginTop: "auto", display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 13.5, color: "var(--nz-red)" }}>
+        Ver {f.title.toLowerCase().split(" ")[0]} <Icon name="ArrowRight" size={14} />
+      </span>
+    </Link>
+  );
+}
 
 function Newsletter({ compact }) {
   const renderedAt = useMemo(() => Date.now(), []);
@@ -101,7 +119,9 @@ export default function RecursosHub() {
         title={<>Contenido que <span style={{ color: "var(--nz-red)" }}>educa al mercado</span> y convierte visitantes en prospectos</>}
         lead="Artículos, casos de éxito, guías descargables, glosario y webinars. El centro de contenidos posiciona a Netzen en buscadores, resuelve dudas y prepara oportunidades con origen medible."
         actions={<>
-          <Button size="lg" to="/recursos/guias">Descarga una guía</Button>
+          {isRouteEnabled("/recursos/guias")
+            ? <Button size="lg" to="/recursos/guias">Descarga una guía</Button>
+            : <Button size="lg" to="/recursos/blog">Ver el blog</Button>}
           <Button size="lg" variant="secondary" to="/contacto">Agenda tu diagnóstico</Button>
         </>}
         aside={<Newsletter />}
@@ -113,20 +133,13 @@ export default function RecursosHub() {
           title="Explora por formato"
           lead="Cada tipo de contenido tiene su propia ruta y su propia función: educar, demostrar o convertir."
         />
-        <div className="grid-3" style={{ marginTop: 44 }}>
+        <div
+          className={FORMATOS.length === 2 ? "grid-2" : "grid-3"}
+          style={{ marginTop: 44 }}
+        >
           {FORMATOS.map((f, i) => (
             <Reveal key={f.title} delay={(i % 3) * 90}>
-              <Link to={f.to} className="card card--hover" style={{ display: "flex", flexDirection: "column", gap: 12, color: "inherit", height: "100%" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                  <span className="bubble"><Icon name={f.icon} size={21} /></span>
-                  {f.badge && <Badge tone={f.badge[0]}>{f.badge[1]}</Badge>}
-                </div>
-                <h3 style={{ fontSize: 18, fontWeight: 700 }}>{f.title}</h3>
-                <p style={{ fontSize: 14, lineHeight: 1.6, color: "var(--text-secondary)" }}>{f.desc}</p>
-                <span style={{ marginTop: "auto", display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 13.5, color: "var(--nz-red)" }}>
-                  {f.title === "Último artículo destacado" ? "Leer artículo" : `Ver ${f.title.toLowerCase().split(" ")[0]}`} <Icon name="ArrowRight" size={14} />
-                </span>
-              </Link>
+              <FormatoCard f={f} />
             </Reveal>
           ))}
         </div>
@@ -136,9 +149,13 @@ export default function RecursosHub() {
         <SectionHeading eyebrow="El ecosistema" title="Cómo se conecta con los otros núcleos" />
         <div className="grid-2" style={{ marginTop: 32 }}>
           {[
-            { icon: "Video", text: <><b>Recursos · Webinars</b> → reutiliza contenido de demos y Academy, y vincula a Nosotros · Eventos (reactivación del evento de industria 2027).</>, to: "/nosotros/eventos", label: "Ver Eventos" },
-            { icon: "FileText", text: <><b>Recursos · Guías</b> → cada descarga queda preparada para conectar el interés con un diagnóstico atribuido.</>, to: "/contacto", label: "Ver Contacto" }
-          ].map((c, i) => (
+            (isRouteEnabled("/recursos/webinars") && isRouteEnabled("/nosotros/eventos"))
+              ? { icon: "Video", text: <><b>Recursos · Webinars</b> → reutiliza contenido de demos y Academy, y vincula a Nosotros · Eventos (reactivación del evento de industria 2027).</>, to: "/nosotros/eventos", label: "Ver Eventos" }
+              : null,
+            isRouteEnabled("/recursos/guias")
+              ? { icon: "FileText", text: <><b>Recursos · Guías</b> → cada descarga queda preparada para conectar el interés con un diagnóstico atribuido.</>, to: "/contacto", label: "Ver Contacto" }
+              : { icon: "Newspaper", text: <><b>Recursos · Blog</b> → contenido editorial que educa al mercado y prepara la conversación de diagnóstico.</>, to: "/contacto", label: "Ver Contacto" }
+          ].filter(Boolean).map((c, i) => (
             <Reveal key={i} delay={i * 90}>
               <div className="card" style={{ height: "100%", display: "flex", flexDirection: "column", gap: 14 }}>
                 <div style={{ display: "flex", gap: 14 }}>
@@ -159,8 +176,8 @@ export default function RecursosHub() {
         description="Agenda un diagnóstico y convierte lo aprendido en un plan concreto."
         primaryLabel="Agenda tu diagnóstico"
         primaryTo="/contacto"
-        secondaryLabel="Ver guías"
-        secondaryTo="/recursos/guias"
+        secondaryLabel={isRouteEnabled("/recursos/guias") ? "Ver guías" : "Ver el blog"}
+        secondaryTo={isRouteEnabled("/recursos/guias") ? "/recursos/guias" : "/recursos/blog"}
       />
     </>
   );

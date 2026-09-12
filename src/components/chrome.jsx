@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { NAV, ROUTES, WHATSAPP_URL, HAS_WHATSAPP } from "../lib/nav.js";
+import { isRouteEnabled } from "../lib/featureFlags.js";
 import { Icon, Button, Container } from "./ui.jsx";
 import { trackEvent } from "../lib/analytics.js";
 import { openConsentBanner } from "./ConsentBanner.jsx";
@@ -252,7 +253,7 @@ const FOOTER_COLS = [
     links: [
       { label: "Nosotros", to: "/nosotros" },
       { label: "Recursos", to: "/recursos" },
-      { label: "Eventos", to: "/nosotros/eventos" },
+      ...(isRouteEnabled("/nosotros/eventos") ? [{ label: "Eventos", to: "/nosotros/eventos" }] : []),
       { label: "Contacto", to: "/contacto" }
     ]
   },
@@ -296,7 +297,7 @@ export function SiteFooter() {
                     trackLabel="Soporte a clientes"
                     style={{ marginTop: 14, alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 8, color: "#fff" }}
                   >
-                    <Icon name="LifeBuoy" size={16} />Soporte
+                    Soporte
                   </Button>
                 )}
               </div>

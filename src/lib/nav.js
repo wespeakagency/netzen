@@ -1,7 +1,9 @@
 // Arquitectura de información del sitio — única fuente de verdad para
 // header, footer, mapa del sitio y navegador de prototipo.
 
-export const NAV = [
+import { isRouteEnabled } from "./featureFlags.js";
+
+const RAW_NAV = [
   {
     label: "Plataforma",
     path: "/plataforma",
@@ -84,6 +86,11 @@ export const NAV = [
     ]
   }
 ];
+
+export const NAV = RAW_NAV.map((group) => ({
+  ...group,
+  children: (group.children || []).filter((child) => isRouteEnabled(child.path))
+}));
 
 // Registro completo de rutas para el mapa del sitio.
 export const ROUTES = [

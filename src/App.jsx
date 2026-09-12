@@ -1,9 +1,10 @@
 import React, { useEffect } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { SiteHeader, SiteFooter, FloatingActions, ScrollToTop } from "./components/chrome.jsx";
 import { useRevealObserver } from "./components/ui.jsx";
 import ConsentBanner from "./components/ConsentBanner.jsx";
 import { trackPageView } from "./lib/analytics.js";
+import { isRouteEnabled } from "./lib/featureFlags.js";
 
 import Home from "./pages/Home.jsx";
 import Mapa from "./pages/Mapa.jsx";
@@ -69,9 +70,9 @@ export default function App() {
 
           <Route path="/recursos" element={<RecursosHub />} />
           <Route path="/recursos/blog" element={<Blog />} />
-          <Route path="/recursos/casos" element={<Casos />} />
-          <Route path="/recursos/guias" element={<Guias />} />
-          <Route path="/recursos/webinars" element={<Webinars />} />
+          <Route path="/recursos/casos" element={isRouteEnabled("/recursos/casos") ? <Casos /> : <Navigate to="/recursos" replace />} />
+          <Route path="/recursos/guias" element={isRouteEnabled("/recursos/guias") ? <Guias /> : <Navigate to="/recursos" replace />} />
+          <Route path="/recursos/webinars" element={isRouteEnabled("/recursos/webinars") ? <Webinars /> : <Navigate to="/recursos" replace />} />
           <Route path="/recursos/glosario" element={<Glosario />} />
 
           <Route path="/nosotros" element={<NosotrosHub />} />
@@ -79,7 +80,7 @@ export default function App() {
           <Route path="/nosotros/equipo" element={<Equipo />} />
           <Route path="/nosotros/mision-vision-valores" element={<MVV />} />
           <Route path="/nosotros/por-que-netzen" element={<PorQueNetzen />} />
-          <Route path="/nosotros/eventos" element={<Eventos />} />
+          <Route path="/nosotros/eventos" element={isRouteEnabled("/nosotros/eventos") ? <Eventos /> : <Navigate to="/nosotros" replace />} />
 
           <Route path="/contacto" element={<Contacto />} />
           <Route path="/contacto/demo" element={<Contacto demo />} />

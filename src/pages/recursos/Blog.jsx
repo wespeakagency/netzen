@@ -5,6 +5,7 @@ import { PageHero, CTABand } from "../../components/chrome.jsx";
 import { Newsletter } from "./Hub.jsx";
 import { useSubstackFeed, SUBSTACK_URL } from "../../hooks/useSubstackFeed.js";
 import { trackEvent } from "../../lib/analytics.js";
+import { isRouteEnabled } from "../../lib/featureFlags.js";
 
 function PostCard({ post }) {
   return (
@@ -300,8 +301,8 @@ export default function Blog() {
         description="Agenda un diagnóstico y convierte la teoría en un plan."
         primaryLabel="Agenda tu diagnóstico"
         primaryTo="/contacto"
-        secondaryLabel="Ver guías"
-        secondaryTo="/recursos/guias"
+        secondaryLabel={isRouteEnabled("/recursos/guias") ? "Ver guías" : "Ver glosario"}
+        secondaryTo={isRouteEnabled("/recursos/guias") ? "/recursos/guias" : "/recursos/glosario"}
       />
     </>
   );

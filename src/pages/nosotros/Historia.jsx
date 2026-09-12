@@ -3,6 +3,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Icon, Button, Section, SectionHeading, Reveal, Badge } from "../../components/ui.jsx";
 import { PageHero, CTABand } from "../../components/chrome.jsx";
+import { isRouteEnabled } from "../../lib/featureFlags.js";
 
 const HITOS = [
   {
@@ -62,7 +63,7 @@ export default function Historia() {
                   </div>
                   <h3 style={{ marginTop: 14, fontSize: 19, fontWeight: 800 }}>{h.title}</h3>
                   <p style={{ marginTop: 10, fontSize: 14.5, lineHeight: 1.65, color: "var(--text-secondary)" }}>{h.desc}</p>
-                  {h.link && (
+                  {h.link && isRouteEnabled(h.link.to) && (
                     <Link to={h.link.to} style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 12, fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 14 }}>
                       {h.link.label} <Icon name="ArrowRight" size={14} />
                     </Link>
