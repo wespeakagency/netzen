@@ -261,11 +261,12 @@ const FOOTER_COLS = [
     links: [
       { label: "Agenda tu diagnóstico", to: "/contacto" },
       ...(HAS_WHATSAPP ? [{ label: "WhatsApp", href: WHATSAPP_URL }] : []),
-      { label: "Acceso clientes", href: "#" },
-      { label: "Soporte", href: "#" }
+      { label: "Acceso clientes", href: "#" }
     ]
   }
 ];
+
+const SUPPORT_URL = "https://netzen.guru/LoginSalesForce.php";
 
 export function SiteFooter() {
   return (
@@ -287,6 +288,16 @@ export function SiteFooter() {
                   l.to
                     ? <Link to={l.to} key={l.label}>{l.label}</Link>
                     : <a href={l.href} key={l.label} target={l.href?.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer" onClick={l.href === "#" ? (e) => e.preventDefault() : undefined}>{l.label}</a>
+                )}
+                {col.title === "Contacto" && (
+                  <Button
+                    href={SUPPORT_URL}
+                    size="sm"
+                    trackLabel="Soporte a clientes"
+                    style={{ marginTop: 14, alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 8, color: "#fff" }}
+                  >
+                    <Icon name="LifeBuoy" size={16} />Soporte
+                  </Button>
                 )}
               </div>
             </div>
