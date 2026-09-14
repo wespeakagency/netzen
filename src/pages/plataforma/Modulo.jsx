@@ -4,6 +4,7 @@ import { Link, useParams, Navigate } from "react-router-dom";
 import { Icon, Button, Section, SectionHeading, Reveal, MockFrame, MockBars, CheckLine, Badge, Steps } from "../../components/ui.jsx";
 import { PageHero, CTABand } from "../../components/chrome.jsx";
 import { MODULOS } from "./data.js";
+import { LABELS, CTA_PATHS } from "../../lib/copy.js";
 
 /* ---------- mocks por tipo ---------- */
 function ChatMock() {
@@ -174,7 +175,7 @@ function ConexionCard({ conexion }) {
     <Reveal>
       <div className="card" style={{ borderColor: "var(--nz-red-tint-strong)", background: "var(--nz-white)", display: "flex", gap: 18, alignItems: "flex-start", flexWrap: "wrap" }}>
         <span className="bubble"><Icon name={conexion.icon} size={21} /></span>
-        <div style={{ flex: 1, minWidth: 260 }}>
+        <div style={{ flex: 1, minWidth: "min(260px, 100%)" }}>
           <p style={{ fontSize: 15, lineHeight: 1.65 }}>
             <b style={{ color: "var(--nz-red)" }}>{conexion.text[0]}</b>{conexion.text[1]}
           </p>
@@ -200,8 +201,8 @@ export default function PlataformaModulo() {
         title={m.title}
         lead={m.lead}
         actions={<>
-          <Button size="lg" to="/contacto/demo">Solicita un demo protegido</Button>
-          <Button size="lg" variant="secondary" to="/contacto">Agenda tu diagnóstico</Button>
+          <Button size="lg" to={CTA_PATHS.demo} placement="hero">{LABELS.demo}</Button>
+          <Button size="lg" variant="secondary" to={CTA_PATHS.contacto} placement="hero">{LABELS.diagnostico}</Button>
         </>}
         aside={<ModuleMock m={m} />}
       />
@@ -298,7 +299,7 @@ export default function PlataformaModulo() {
         description="Demo protegido para prospectos calificados: teaser público + acceso restringido, guiado por un consultor."
         primaryLabel="Solicitar demo"
         primaryTo="/contacto/demo"
-        secondaryLabel="Agenda tu diagnóstico"
+        secondaryLabel={LABELS.diagnostico}
         secondaryTo="/contacto"
       />
     </>

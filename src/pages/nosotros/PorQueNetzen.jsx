@@ -3,6 +3,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Icon, Button, Section, SectionHeading, Reveal, Badge } from "../../components/ui.jsx";
 import { PageHero, CTABand } from "../../components/chrome.jsx";
+import { LABELS, CTA_PATHS } from "../../lib/copy.js";
 
 const RAZONES = [
   { icon: "Blocks", title: "Ecosistema integral", desc: "Plataforma, consultoría y formación en un mismo lugar. No tienes que coordinar a tres proveedores distintos: la solución es de principio a fin." },
@@ -22,7 +23,7 @@ export default function PorQueNetzen() {
         title={<>Lo que nos hace <span style={{ color: "var(--nz-red)" }}>distintos</span> de cualquier proveedor de software</>}
         lead="Netzen no vende la licencia: habilita la plataforma mediante un contrato de uso en modalidad de renta y acompaña la implementación. El ecosistema integra tecnología, consultoría y formación con experiencia real en venta directa, retail, e-commerce, franquicias y multinivel."
         actions={<>
-          <Button size="lg" to="/contacto">Agenda tu diagnóstico</Button>
+          <Button size="lg" to={CTA_PATHS.contacto} placement="hero">{LABELS.diagnostico}</Button>
           <Button size="lg" variant="secondary" to="/nosotros/historia">Nuestra historia</Button>
         </>}
       />
@@ -81,7 +82,7 @@ export default function PorQueNetzen() {
       <CTABand
         title="Compruébalo en una conversación"
         description="Te mostramos cómo el ecosistema completo resuelve tu operación. Agenda tu diagnóstico."
-        primaryLabel="Agenda tu diagnóstico"
+        primaryLabel={LABELS.diagnostico}
         primaryTo="/contacto"
         secondaryLabel="Ver soluciones"
         secondaryTo="/soluciones"

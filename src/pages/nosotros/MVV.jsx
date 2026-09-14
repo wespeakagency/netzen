@@ -2,6 +2,7 @@ import React from "react";
 import { Badge, Button, Icon, Reveal, Section, SectionHeading } from "../../components/ui.jsx";
 import { CTABand, PageHero } from "../../components/chrome.jsx";
 import identityImage from "../../assets/netzen-human-values-v2.jpg";
+import { LABELS, CTA_PATHS } from "../../lib/copy.js";
 
 const EXECUTIVE = {
   mission:
@@ -87,7 +88,7 @@ export default function MVV() {
         lead="La identidad de Netzen integra tecnología, conocimiento y desarrollo humano para generar crecimiento sostenible e impacto económico y social."
         actions={
           <>
-            <Button size="lg" to="/contacto">Agenda tu diagnóstico</Button>
+            <Button size="lg" to={CTA_PATHS.contacto} placement="hero">{LABELS.diagnostico}</Button>
             <Button size="lg" variant="secondary" to="/nosotros/por-que-netzen">Por qué Netzen</Button>
           </>
         }
@@ -172,7 +173,7 @@ export default function MVV() {
       <CTABand
         title="Crecer de manera consciente también es una decisión operativa"
         description="Conoce cómo tecnología, formación y consultoría estratégica se convierten en un recorrido para tu organización."
-        primaryLabel="Agenda tu diagnóstico"
+        primaryLabel={LABELS.diagnostico}
         primaryTo="/contacto"
         secondaryLabel="Conoce el ecosistema"
         secondaryTo="/soluciones"

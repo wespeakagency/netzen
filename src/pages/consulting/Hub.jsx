@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Icon, Button, Section, SectionHeading, Reveal, Steps } from "../../components/ui.jsx";
 import { PageHero, CTABand } from "../../components/chrome.jsx";
 import { SERVICIOS, SERVICIOS_ORDER } from "./data.js";
+import { LABELS, CTA_PATHS } from "../../lib/copy.js";
 
 function BrainVisual() {
   return (
@@ -33,8 +34,8 @@ export default function ConsultingHub() {
         title={<>Consulting: el <span style={{ color: "var(--nz-red)" }}>cerebro estratégico</span> que conecta todo</>}
         lead="Diagnóstico, planes de compensación y estrategia de industria. Antes de instalar tecnología o formar a tu red, definimos el modelo que hace sostenible el negocio: cómo se vende, cómo se paga y hacia dónde se expande."
         actions={<>
-          <Button size="lg" to="/contacto">Agenda tu diagnóstico</Button>
-          <Button size="lg" variant="secondary" to="/contacto/demo">Solicita un demo protegido</Button>
+          <Button size="lg" to={CTA_PATHS.contacto} placement="hero">{LABELS.diagnostico}</Button>
+          <Button size="lg" variant="secondary" to={CTA_PATHS.demo} placement="hero">{LABELS.demo}</Button>
         </>}
         aside={<BrainVisual />}
       />
@@ -96,9 +97,9 @@ export default function ConsultingHub() {
       </Section>
 
       <CTABand
-        title="Agenda tu diagnóstico"
+        title={LABELS.diagnostico}
         description="El punto de partida: entendemos tu modelo, tu red y tus números antes de proponer cualquier plan o tecnología."
-        primaryLabel="Agenda tu diagnóstico"
+        primaryLabel={LABELS.diagnostico}
         primaryTo="/contacto"
         secondaryLabel={null}
       />

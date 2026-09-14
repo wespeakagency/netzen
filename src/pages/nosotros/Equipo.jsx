@@ -2,6 +2,7 @@
 import React from "react";
 import { Icon, Button, Section, SectionHeading, Reveal } from "../../components/ui.jsx";
 import { PageHero, CTABand } from "../../components/chrome.jsx";
+import { LABELS, CTA_PATHS } from "../../lib/copy.js";
 
 const LIDERES = [
   { rol: "Dirección general", icon: "Compass", desc: "Trayectoria y especialidad por confirmar con dirección. Años de experiencia en el sector y rol en la visión de Netzen." },
@@ -25,7 +26,7 @@ export default function Equipo() {
         title={<>Las <span style={{ color: "var(--nz-red)" }}>personas</span> detrás de la plataforma</>}
         lead="La tecnología la hace la gente. Detrás de Netzen hay un equipo que combina décadas de experiencia técnica con un conocimiento profundo de la venta directa y el multinivel. Esa mezcla es nuestro mejor respaldo de autoridad."
         actions={<>
-          <Button size="lg" to="/contacto">Agenda tu diagnóstico</Button>
+          <Button size="lg" to={CTA_PATHS.contacto} placement="hero">{LABELS.diagnostico}</Button>
           <Button size="lg" variant="secondary" to="/nosotros/historia">Nuestra historia</Button>
         </>}
       />
@@ -69,7 +70,7 @@ export default function Equipo() {
       <CTABand
         title="Conoce al equipo en una sesión"
         description="La gente de Netzen se presenta mejor en una conversación. Agenda tu diagnóstico."
-        primaryLabel="Agenda tu diagnóstico"
+        primaryLabel={LABELS.diagnostico}
         primaryTo="/contacto"
         secondaryLabel="Nuestra historia"
         secondaryTo="/nosotros/historia"

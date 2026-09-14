@@ -6,6 +6,7 @@ import { PageHero, CTABand } from "../../components/chrome.jsx";
 import { trackEvent } from "../../lib/analytics.js";
 import { submitLead, FormSubmitError } from "../../lib/forms.js";
 import { isRouteEnabled } from "../../lib/featureFlags.js";
+import { LABELS, CTA_PATHS } from "../../lib/copy.js";
 
 const ALL_FORMATOS = [
   { to: "/recursos/blog", icon: "Newspaper", title: "Blog", badge: null, desc: "Artículos sobre industria, omnicanalidad, fidelización, regulación y crecimiento comercial." },
@@ -122,7 +123,7 @@ export default function RecursosHub() {
           {isRouteEnabled("/recursos/guias")
             ? <Button size="lg" to="/recursos/guias">Descarga una guía</Button>
             : <Button size="lg" to="/recursos/blog">Ver el blog</Button>}
-          <Button size="lg" variant="secondary" to="/contacto">Agenda tu diagnóstico</Button>
+          <Button size="lg" variant="secondary" to={CTA_PATHS.contacto} placement="hero">{LABELS.diagnostico}</Button>
         </>}
         aside={<Newsletter />}
       />
@@ -174,7 +175,7 @@ export default function RecursosHub() {
       <CTABand
         title="¿Listo para pasar del contenido a la acción?"
         description="Agenda un diagnóstico y convierte lo aprendido en un plan concreto."
-        primaryLabel="Agenda tu diagnóstico"
+        primaryLabel={LABELS.diagnostico}
         primaryTo="/contacto"
         secondaryLabel={isRouteEnabled("/recursos/guias") ? "Ver guías" : "Ver el blog"}
         secondaryTo={isRouteEnabled("/recursos/guias") ? "/recursos/guias" : "/recursos/blog"}

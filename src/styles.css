@@ -244,6 +244,10 @@ img { max-width: 100%; }
 @media (prefers-reduced-motion: reduce) {
   .reveal, .reveal--left, .reveal--right, .reveal--scale { opacity: 1; transform: none; transition: none; }
 }
+@media (max-width: 720px) {
+  .reveal--left, .reveal--right { transform: translateY(26px); }
+  .reveal--left.is-in, .reveal--right.is-in { transform: none; }
+}
 
 @keyframes nzFadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
 @keyframes nzFadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -277,6 +281,7 @@ img { max-width: 100%; }
 .hdr.is-scrolled { box-shadow: var(--shadow-sm); }
 .hdr__in { max-width: var(--container-max); margin: 0 auto; padding: 0 var(--container-pad); height: var(--header-height); display: flex; align-items: center; gap: 44px; }
 .hdr__nav { display: flex; align-items: center; gap: 4px; height: 100%; }
+.hdr__cta { margin-left: auto; display: flex; align-items: center; gap: 12px; }
 
 .navitem { position: relative; height: 100%; display: flex; align-items: center; }
 .navitem > a {
@@ -287,8 +292,8 @@ img { max-width: 100%; }
 }
 .navitem > a:hover { background: var(--nz-chalk); color: var(--text-heading); }
 .navitem > a.is-active { color: var(--nz-red); }
-.navitem > a .chev { transition: transform var(--dur-base) var(--ease-out); }
-.navitem:hover > a .chev, .navitem:focus-within > a .chev { transform: rotate(180deg); }
+.navitem > a .chev { transform: scale(2); transform-origin: center; transition: transform var(--dur-base) var(--ease-out); }
+.navitem:hover > a .chev, .navitem:focus-within > a .chev { transform: scale(2) rotate(180deg); }
 
 .dropdown {
   position: absolute; top: calc(100% - 6px); left: 50%; transform: translate(-50%, 8px);
@@ -398,7 +403,7 @@ img { max-width: 100%; }
 .field .req { color: var(--nz-red); }
 .field input, .field select, .field textarea {
   height: 46px; padding: 0 14px; border: 1.5px solid var(--border-strong); border-radius: var(--radius-sm);
-  background: var(--nz-white); font-family: var(--font-body); font-size: 15px; color: var(--text-body);
+  background: var(--nz-white); font-family: var(--font-body); font-size: 16px; color: var(--text-body);
   transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
 }
 .field textarea { height: auto; padding: 12px 14px; resize: vertical; min-height: 110px; }
@@ -501,6 +506,8 @@ img { max-width: 100%; }
 @media (max-width: 720px) {
   :root { --section-pad-y: 64px; --section-pad-y-sm: 44px; }
   .stat__value { font-size: 36px; }
+  .btn--sm { height: 44px; padding: 0 20px; font-size: 14px; }
+  .btn--block { white-space: normal; line-height: 1.25; height: auto; min-height: 44px; padding: 10px 16px; }
 }
 
 /* ============================================================
@@ -1258,11 +1265,11 @@ img { max-width: 100%; }
   .values-grid { grid-template-columns: 1fr; }
   .values-grid > :nth-child(n) { grid-column: 1; }
   .cta-band { padding: 42px 0; }
-  .cta-band__panel { align-items: stretch; }
-  .cta-band__actions { width: 100%; display: grid; }
-  .cta-band__actions .btn { width: 100%; }
-  .floats { right: 14px; bottom: 14px; }
-  .float-cta { height: 40px; padding: 0 15px; font-size: 12px; }
+  .cta-band__panel { align-items: stretch; padding: 22px; }
+  .cta-band__actions { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr); }
+  .cta-band__actions .btn { width: 100%; min-width: 0; padding: 12px 14px; height: auto; min-height: 48px; white-space: normal; line-height: 1.25; text-align: center; }
+  .floats { right: 14px; bottom: 14px; gap: 10px; }
+  .float-cta { width: 48px; height: 48px; padding: 0; border-radius: 50%; justify-content: center; gap: 0; font-size: 0; }
   .float-wa { width: 48px; height: 48px; }
 }
 
@@ -1279,3 +1286,55 @@ img { max-width: 100%; }
     line-height: 1.35;
   }
 }
+
+/* ============================================================
+   NETZEN · OVERFLOW GUARDRAILS
+   Reglas defensivas contra desbordes de texto y flex/grid items.
+   Sin refactor de componentes: solo blindaje.
+   ============================================================ */
+
+/* Cards: contener contenido largo y permitir shrink dentro de flex/grid */
+.card,
+.card--hover,
+.card--dark,
+.card--pad-lg,
+.link-card {
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+/* Títulos, párrafos y links dentro de cards: quebrar palabras largas si hace falta */
+.card h1, .card h2, .card h3, .card h4, .card h5,
+.card p, .card li, .card a, .card span,
+.link-card h1, .link-card h2, .link-card h3, .link-card h4, .link-card h5,
+.link-card p, .link-card li, .link-card a, .link-card span {
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Grid helpers: sus hijos deben poder shrink (default min-width: auto rompe layouts) */
+.grid > *,
+.grid-2 > *,
+.grid-3 > *,
+.grid-4 > * {
+  min-width: 0;
+}
+
+/* Form fields: proteger inputs contra desbordes por placeholder/valor largo */
+.field input,
+.field select,
+.field textarea {
+  max-width: 100%;
+}
+
+/* Media dentro de contenedores: nunca desbordar */
+img, video, svg { max-width: 100%; }
+
+/* Wrappers de animación y mockups: no expandir por contenido intrínseco */
+.anim-fade-up, .reveal { min-width: 0; }
+.mockframe { max-width: 100%; }
+.phero__grid > * { min-width: 0; }
+

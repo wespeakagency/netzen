@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Icon, Button, Section, SectionHeading, Reveal, Badge } from "../../components/ui.jsx";
 import { PageHero, CTABand } from "../../components/chrome.jsx";
 import { isRouteEnabled } from "../../lib/featureFlags.js";
+import { LABELS, CTA_PATHS } from "../../lib/copy.js";
 
 const HITOS = [
   {
@@ -44,7 +45,7 @@ export default function Historia() {
         title={<>De la computadora en el bochito a la era de la <span style={{ color: "var(--nz-red)" }}>inteligencia artificial</span></>}
         lead="Más de tres décadas adaptando la tecnología al ritmo de la venta directa: empezamos cuando un equipo de cómputo era una rareza y hoy operamos con analítica predictiva e IA. Esta es la trayectoria que respalda cada implementación."
         actions={<>
-          <Button size="lg" to="/contacto">Agenda tu diagnóstico</Button>
+          <Button size="lg" to={CTA_PATHS.contacto} placement="hero">{LABELS.diagnostico}</Button>
           <Button size="lg" variant="secondary" to="/nosotros/por-que-netzen">Por qué Netzen</Button>
         </>}
       />
@@ -91,7 +92,7 @@ export default function Historia() {
       <CTABand
         title="Esa experiencia, al servicio de tu operación"
         description="Pon a trabajar 30 años de trayectoria en tu empresa. Empieza con un diagnóstico."
-        primaryLabel="Agenda tu diagnóstico"
+        primaryLabel={LABELS.diagnostico}
         primaryTo="/contacto"
         secondaryLabel="Por qué Netzen"
         secondaryTo="/nosotros/por-que-netzen"

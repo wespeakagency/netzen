@@ -64,6 +64,7 @@ export function Button({
   className = "",
   trackLabel,
   trackType = "cta_click",
+  placement,
   ...rest
 }) {
   const cls = `btn btn--${variant} ${size !== "md" ? `btn--${size}` : ""} ${block ? "btn--block" : ""} ${className}`.trim();
@@ -71,7 +72,8 @@ export function Button({
   const handleClick = (event) => {
     trackEvent(trackType, {
       label: label || "acción",
-      destination: to || href || "acción_local"
+      destination: to || href || "acción_local",
+      ...(placement ? { placement } : {})
     });
     onClick?.(event);
   };

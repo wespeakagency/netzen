@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Icon, Button, Section, SectionHeading, Reveal, Badge } from "../../components/ui.jsx";
 import { PageHero, CTABand } from "../../components/chrome.jsx";
 import { RECORRIDOS, RECORRIDOS_ORDER, MODELOS_NEGOCIO, MODELOS_ORDER } from "./data.js";
+import { LABELS, CTA_PATHS } from "../../lib/copy.js";
 
 function MapaRecorridos() {
   return (
@@ -46,8 +47,8 @@ export default function SolucionesHub() {
         title={<>¿Dónde estás hoy? <span style={{ color: "var(--nz-red)" }}>Encuentra tu recorrido.</span></>}
         lead="No importa si apenas exploras el modelo, si ya tienes una empresa establecida que busca escalar, o si quieres profesionalizar la red de distribuidores con la que trabajas: elige tu situación y entra a un recorrido a tu medida que combina Plataforma, Academy y Consulting."
         actions={<>
-          <Button size="lg" to="/contacto">Agenda tu diagnóstico</Button>
-          <Button size="lg" variant="secondary" to="/contacto/demo">Solicita un demo protegido</Button>
+          <Button size="lg" to={CTA_PATHS.contacto} placement="hero">{LABELS.diagnostico}</Button>
+          <Button size="lg" variant="secondary" to={CTA_PATHS.demo} placement="hero">{LABELS.demo}</Button>
         </>}
         aside={<MapaRecorridos />}
       />
@@ -168,7 +169,7 @@ export default function SolucionesHub() {
       <CTABand
         title="¿Ya sabes en qué punto estás?"
         description="La conversación empieza por valor y alcance, no por precio."
-        primaryLabel="Agenda tu diagnóstico"
+        primaryLabel={LABELS.diagnostico}
         primaryTo="/contacto"
         secondaryLabel="Demo protegido"
         secondaryTo="/contacto/demo"

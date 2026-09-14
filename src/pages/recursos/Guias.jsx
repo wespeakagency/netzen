@@ -5,6 +5,7 @@ import { PageHero, CTABand } from "../../components/chrome.jsx";
 import { GUIAS, GUIA_DESTACADA } from "./data.js";
 import { trackEvent } from "../../lib/analytics.js";
 import { submitLead, FormSubmitError } from "../../lib/forms.js";
+import { LABELS } from "../../lib/copy.js";
 
 function GuiaCover({ icon, small }) {
   return (
@@ -152,7 +153,7 @@ export default function Guias() {
       <CTABand
         title="¿Prefieres hablar con un especialista?"
         description="Agenda un diagnóstico y recibe recomendaciones a la medida de tu operación."
-        primaryLabel="Agenda tu diagnóstico"
+        primaryLabel={LABELS.diagnostico}
         primaryTo="/contacto"
         secondaryLabel="Ver blog"
         secondaryTo="/recursos/blog"

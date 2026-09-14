@@ -7,6 +7,7 @@ import { Container } from "../../components/ui.jsx";
 import { WHATSAPP_URL, HAS_WHATSAPP } from "../../lib/nav.js";
 import { trackEvent } from "../../lib/analytics.js";
 import { submitLead, FormSubmitError } from "../../lib/forms.js";
+import { LABELS } from "../../lib/copy.js";
 
 const SITUACIONES = [
   { k: "A", label: "Apenas empiezo / explorando" },
@@ -270,9 +271,9 @@ function FormularioContacto({ demo }) {
       )}
 
       <div style={{ marginTop: 20 }}>
-        <button type="submit" className="btn btn--primary btn--lg btn--block" disabled={sending}>
-          {sending ? "Enviando..." : demo ? "Solicitar demo protegido" : "Agenda tu diagnóstico"}
-        </button>
+        <Button type="submit" size="lg" block disabled={sending} placement="submit-form">
+          {sending ? "Enviando..." : demo ? LABELS.demo : LABELS.diagnostico}
+        </Button>
       </div>
     </form>
   );
@@ -332,7 +333,7 @@ export default function Contacto({ demo = false }) {
           <Reveal>
             <Link to={demo ? "/contacto" : "/contacto/demo"} className="card card--hover" style={{ display: "flex", flexDirection: "column", gap: 12, color: "inherit", height: "100%" }}>
               <span className="bubble"><Icon name={demo ? "CalendarCheck" : "PlayCircle"} size={21} /></span>
-              <h3 style={{ fontSize: 16.5, fontWeight: 700 }}>{demo ? "Agenda tu diagnóstico" : "Solicita un demo protegido"}</h3>
+              <h3 style={{ fontSize: 16.5, fontWeight: 700 }}>{demo ? LABELS.diagnostico : LABELS.demo}</h3>
               <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "var(--text-secondary)" }}>
                 {demo ? "La puerta de entrada al ecosistema: entendemos tu caso antes de proponer." : "Teaser público + demo real controlado para prospectos calificados."}
               </p>
@@ -379,7 +380,7 @@ export default function Contacto({ demo = false }) {
       <CTABand
         title={demo ? "¿Prefieres empezar por el diagnóstico?" : "¿Prefieres ver la plataforma primero?"}
         description="Los dos caminos llevan al mismo lugar: un recorrido a la medida de tu operación."
-        primaryLabel={demo ? "Agenda tu diagnóstico" : "Solicita un demo protegido"}
+        primaryLabel={demo ? LABELS.diagnostico : LABELS.demo}
         primaryTo={demo ? "/contacto" : "/contacto/demo"}
         secondaryLabel="Ver soluciones"
         secondaryTo="/soluciones"

@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { Icon, Button, Section, SectionHeading, Reveal, TagChip, Badge, Stat } from "../../components/ui.jsx";
 import { PageHero, CTABand } from "../../components/chrome.jsx";
 import { CASOS } from "./data.js";
+import { LABELS } from "../../lib/copy.js";
 
 const FILTROS = ["Todos", "Venta directa", "Multinivel", "Retail", "Franquicias", "E-commerce"];
 
@@ -89,7 +90,7 @@ export default function Casos() {
       <CTABand
         title="¿Quieres ser el próximo caso de éxito?"
         description="Agenda un diagnóstico y descubre tu recorrido recomendado."
-        primaryLabel="Agenda tu diagnóstico"
+        primaryLabel={LABELS.diagnostico}
         primaryTo="/contacto"
         secondaryLabel="Ver soluciones"
         secondaryTo="/soluciones"

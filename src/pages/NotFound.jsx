@@ -4,6 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Container, Icon, Button, Section, Reveal } from "../components/ui.jsx";
 import { CTABand } from "../components/chrome.jsx";
 import { trackEvent } from "../lib/analytics.js";
+import { LABELS } from "../lib/copy.js";
 
 const SUGERENCIAS = [
   { to: "/", icon: "Compass", title: "Inicio", desc: "Vuelve a la página principal y arranca de cero." },
@@ -62,7 +63,7 @@ export default function NotFound() {
       <CTABand
         title="¿No encuentras lo que buscabas?"
         description="Cuéntanos qué estabas intentando lograr y te guiamos al recurso correcto."
-        primaryLabel="Agenda tu diagnóstico"
+        primaryLabel={LABELS.diagnostico}
         primaryTo="/contacto"
         secondaryLabel="Ver mapa del sitio"
         secondaryTo="/mapa"

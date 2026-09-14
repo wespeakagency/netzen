@@ -5,6 +5,7 @@ import { Icon, Button, Section, SectionHeading, Reveal, Badge, Stat } from "../.
 import { PageHero, CTABand } from "../../components/chrome.jsx";
 import isotipo from "../../assets/netzen-isotipo-red.png";
 import { isRouteEnabled } from "../../lib/featureFlags.js";
+import { LABELS, CTA_PATHS } from "../../lib/copy.js";
 
 const ALL_SUBPAGES = [
   { to: "/nosotros/historia", icon: "History", title: "Historia", desc: "De la computadora en el bochito a la última década de inteligencia artificial: el recorrido que respalda lo que hacemos hoy." },
@@ -49,7 +50,7 @@ export default function NosotrosHub() {
         title={<>Tecnología, conocimiento y desarrollo humano para <span style={{ color: "var(--nz-red)" }}>crecer con conciencia</span></>}
         lead="Netzen acompaña organizaciones de Venta Directa, Retail, e-Commerce, Franquicias y multinivel con una combinación difícil de separar: plataforma, consultoría estratégica y formación especializada."
         actions={<>
-          <Button size="lg" to="/contacto">Agenda tu diagnóstico</Button>
+          <Button size="lg" to={CTA_PATHS.contacto} placement="hero">{LABELS.diagnostico}</Button>
           <Button size="lg" variant="secondary" to="/nosotros/historia">Conoce nuestra historia</Button>
         </>}
         aside={<TimelineMini />}
@@ -120,7 +121,7 @@ export default function NosotrosHub() {
       <CTABand
         title="Conversemos sobre tu operación"
         description="La autoridad la demostramos en una conversación: agenda tu diagnóstico sin costo."
-        primaryLabel="Agenda tu diagnóstico"
+        primaryLabel={LABELS.diagnostico}
         primaryTo="/contacto"
         secondaryLabel="Nuestra historia"
         secondaryTo="/nosotros/historia"

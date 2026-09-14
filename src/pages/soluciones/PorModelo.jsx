@@ -6,6 +6,7 @@ import { Icon, Button, Section, SectionHeading, Reveal, CheckLine, MockFrame, Mo
 import { PageHero, CTABand, Breadcrumbs } from "../../components/chrome.jsx";
 import { MODELOS_NEGOCIO, MODELOS_ORDER } from "./data.js";
 import { Container } from "../../components/ui.jsx";
+import { LABELS, CTA_PATHS } from "../../lib/copy.js";
 
 export default function PorModelo() {
   const [params, setParams] = useSearchParams();
@@ -56,8 +57,8 @@ export default function PorModelo() {
               </h2>
               <p className="lead" style={{ marginTop: 16 }}>{m.hero}</p>
               <div style={{ marginTop: 28, display: "flex", gap: 14, flexWrap: "wrap" }}>
-                <Button size="lg" to="/contacto/demo">Solicita un demo protegido</Button>
-                <Button size="lg" variant="secondary" to="/contacto">Agenda tu diagnóstico</Button>
+                <Button size="lg" to={CTA_PATHS.demo} placement="hero">{LABELS.demo}</Button>
+                <Button size="lg" variant="secondary" to={CTA_PATHS.contacto} placement="hero">{LABELS.diagnostico}</Button>
               </div>
             </div>
             <MockFrame url={`app.netzen.mx/${modelo}`}>
@@ -109,9 +110,9 @@ export default function PorModelo() {
       <CTABand
         title={`Lleva tu ${m.name.toLowerCase()} a una sola plataforma`}
         description="La conversación empieza por entender tu operación y mostrarte el producto; el precio llega después del diagnóstico."
-        primaryLabel="Solicita un demo protegido"
+        primaryLabel={LABELS.demo}
         primaryTo="/contacto/demo"
-        secondaryLabel="Agenda tu diagnóstico"
+        secondaryLabel={LABELS.diagnostico}
         secondaryTo="/contacto"
       />
     </>

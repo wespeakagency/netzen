@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Icon, Button, Container, Section, SectionHeading, Steps, TagChip, Stat, Reveal, prefersReducedMotion } from "../components/ui.jsx";
 import { CTABand } from "../components/chrome.jsx";
+import { LABELS, CTA_PATHS } from "../lib/copy.js";
 import isotipo from "../assets/netzen-isotipo-red.png";
 import heroImage from "../assets/netzen-hero-v2.jpg";
 
@@ -250,7 +251,7 @@ export default function Home() {
                 Transformamos empresas a través de tecnología, formación y consultoría estratégica, impulsando un modelo de empresa humana donde el desarrollo de las personas y el bien común son motores del crecimiento sostenible.
               </p>
               <div style={{ marginTop: 32, display: "flex", gap: 14, flexWrap: "wrap" }}>
-                <Button size="lg" to="/contacto" className="btn--glow-pulse">Agenda tu diagnóstico</Button>
+                <Button size="lg" to={CTA_PATHS.contacto} placement="hero" className="btn--glow-pulse">{LABELS.diagnostico}</Button>
                 <Button size="lg" variant="secondary" to="/contacto/demo">Ver demo protegido</Button>
               </div>
               <div style={{ marginTop: 36, paddingTop: 22, borderTop: "1px solid var(--border-default)", display: "flex", alignItems: "center", gap: 12 }}>
@@ -456,7 +457,7 @@ export default function Home() {
         </Reveal>
         <Reveal delay={100}>
           <div style={{ maxWidth: 860, margin: "36px auto 0", background: "var(--nz-white)", border: "1px solid var(--border-default)", borderRadius: 20, padding: "28px 32px", boxShadow: "var(--shadow-xs)", display: "flex", gap: 24, alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap" }}>
-            <div key={step} className="anim-fade-up" style={{ flex: 1, minWidth: 260 }}>
+            <div key={step} className="anim-fade-up" style={{ flex: 1, minWidth: "min(260px, 100%)" }}>
               <div className="eyebrow">{cur.core === "Conversión" ? "Momento de conversión" : `Núcleo · ${cur.core}`}</div>
               <h3 style={{ margin: "8px 0 0", fontSize: 22, fontWeight: 800 }}>{cur.title}</h3>
               <p style={{ margin: "10px 0 0", fontSize: 15, lineHeight: 1.6, color: "var(--text-secondary)" }}>{cur.desc}</p>

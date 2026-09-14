@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Icon, Button, Container, Section, SectionHeading, Reveal, MockFrame, MockBars, CheckLine } from "../../components/ui.jsx";
 import { PageHero, CTABand } from "../../components/chrome.jsx";
 import { MODULOS, MODULOS_ORDER } from "./data.js";
+import { LABELS, CTA_PATHS } from "../../lib/copy.js";
 
 function HeroMock() {
   return (
@@ -40,8 +41,8 @@ export default function PlataformaHub() {
         title={<>Plataforma Netzen: software modular para <span style={{ color: "var(--nz-red)" }}>comercializar, operar y crecer</span></>}
         lead="Plataforma SaaS modular que se adapta a distintos modelos de negocio mediante contrato de uso de licencia en modalidad de renta, con consultoría incluida en cada implementación."
         actions={<>
-          <Button size="lg" to="/contacto/demo">Solicita un demo protegido</Button>
-          <Button size="lg" variant="secondary" to="/contacto">Agenda tu diagnóstico</Button>
+          <Button size="lg" to={CTA_PATHS.demo} placement="hero">{LABELS.demo}</Button>
+          <Button size="lg" variant="secondary" to={CTA_PATHS.contacto} placement="hero">{LABELS.diagnostico}</Button>
         </>}
         aside={<HeroMock />}
       />
@@ -116,11 +117,11 @@ export default function PlataformaHub() {
       </Section>
 
       <CTABand
-        title="Solicita un demo protegido"
+        title={LABELS.demo}
         description="Teaser público + demo real controlado para prospectos calificados. Así protegemos la lógica premium de la plataforma."
         primaryLabel="Solicitar demo"
         primaryTo="/contacto/demo"
-        secondaryLabel="Agenda tu diagnóstico"
+        secondaryLabel={LABELS.diagnostico}
         secondaryTo="/contacto"
       />
     </>

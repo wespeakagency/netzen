@@ -3,6 +3,7 @@ import React, { useMemo, useState } from "react";
 import { Icon, Button, Section, SectionHeading, Reveal } from "../../components/ui.jsx";
 import { PageHero, CTABand } from "../../components/chrome.jsx";
 import { GLOSARIO } from "./data.js";
+import { LABELS } from "../../lib/copy.js";
 
 export default function Glosario() {
   const [q, setQ] = useState("");
@@ -96,7 +97,7 @@ export default function Glosario() {
       <CTABand
         title="¿Te faltó un término?"
         description="Escríbenos o agenda un diagnóstico para resolver tus dudas con un especialista."
-        primaryLabel="Agenda tu diagnóstico"
+        primaryLabel={LABELS.diagnostico}
         primaryTo="/contacto"
         secondaryLabel="Ver recursos"
         secondaryTo="/recursos"

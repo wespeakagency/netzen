@@ -5,6 +5,7 @@ import { NAV, ROUTES, WHATSAPP_URL, HAS_WHATSAPP } from "../lib/nav.js";
 import { isRouteEnabled } from "../lib/featureFlags.js";
 import { Icon, Button, Container } from "./ui.jsx";
 import { trackEvent } from "../lib/analytics.js";
+import { LABELS, CTA_PATHS } from "../lib/copy.js";
 import { openConsentBanner } from "./ConsentBanner.jsx";
 import isotipo from "../assets/netzen-isotipo-red.png";
 import logoVerticalWhite from "../assets/netzen-vertical-white.png";
@@ -95,7 +96,7 @@ export function SiteHeader() {
               <div className="navitem" key={item.label}>
                 <NavLink to={item.path} className={({ isActive }) => (isActive || location.pathname.startsWith(item.path) ? "is-active" : "")}>
                   {item.label}
-                  <span className="chev" style={{ display: "inline-flex" }}><Icon name="ChevronDown" size={14} /></span>
+                  <span className="chev" style={{ display: "inline-flex" }}><Icon name="ChevronDown" size={24} strokeWidth={2.5} /></span>
                 </NavLink>
                 <div className={`dropdown ${item.children.length > 5 ? "dropdown--wide" : ""}`} role="menu">
                   <div className={item.children.length > 5 ? "dropdown__grid" : ""}>
@@ -118,9 +119,9 @@ export function SiteHeader() {
               </div>
             ))}
           </nav>
-          <div className="hdr__cta" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="hdr__cta">
             <LanguageStatus />
-            <Button size="sm" to="/contacto">Agenda tu diagnóstico</Button>
+            <Button size="sm" to={CTA_PATHS.contacto} placement="header">{LABELS.diagnostico}</Button>
           </div>
           <button className="hdr__burger" aria-label="Abrir menú" onClick={() => setMobileOpen(true)}>
             <Icon name="Menu" size={24} />
@@ -157,8 +158,8 @@ function MobileNav({ onClose }) {
         </div>
       ))}
       <div style={{ marginTop: 22, display: "grid", gap: 10 }}>
-        <Button to="/contacto" block>Agenda tu diagnóstico</Button>
-        <Button to="/contacto/demo" variant="secondary" block>Solicita un demo protegido</Button>
+        <Button to={CTA_PATHS.contacto} block placement="menu">{LABELS.diagnostico}</Button>
+        <Button to={CTA_PATHS.demo} variant="secondary" block placement="menu">{LABELS.demo}</Button>
         <LanguageStatus mobile />
       </div>
     </div>
@@ -210,11 +211,11 @@ export function PageHero({ eyebrow, badge, title, lead, actions, aside, crumbs }
 /* ---------- banda CTA de cierre ---------- */
 export function CTABand({
   title = "¿Listo para empezar?",
-  description = "La conversación empieza por valor y alcance, no por precio. Agenda tu diagnóstico y recibe un recorrido a la medida de tu operación.",
-  primaryLabel = "Agenda tu diagnóstico",
-  primaryTo = "/contacto",
-  secondaryLabel = "Solicita un demo protegido",
-  secondaryTo = "/contacto/demo"
+  description = `La conversación empieza por valor y alcance, no por precio. ${LABELS.diagnostico} y recibe un recorrido a la medida de tu operación.`,
+  primaryLabel = LABELS.diagnostico,
+  primaryTo = CTA_PATHS.contacto,
+  secondaryLabel = LABELS.demo,
+  secondaryTo = CTA_PATHS.demo
 }) {
   return (
     <section className="section--tight bg-page cta-band">
@@ -228,8 +229,8 @@ export function CTABand({
             <p>{description}</p>
           </div>
           <div className="cta-band__actions">
-            <Button size="lg" to={primaryTo}>{primaryLabel}</Button>
-            {secondaryLabel && <Button size="lg" variant="secondary" to={secondaryTo}>{secondaryLabel}</Button>}
+            <Button size="lg" to={primaryTo} placement="cta-band">{primaryLabel}</Button>
+            {secondaryLabel && <Button size="lg" variant="secondary" to={secondaryTo} placement="cta-band">{secondaryLabel}</Button>}
           </div>
         </div>
       </Container>
@@ -260,7 +261,7 @@ const FOOTER_COLS = [
   {
     title: "Contacto",
     links: [
-      { label: "Agenda tu diagnóstico", to: "/contacto" },
+      { label: LABELS.diagnostico, to: CTA_PATHS.contacto },
       ...(HAS_WHATSAPP ? [{ label: "WhatsApp", href: WHATSAPP_URL }] : []),
       { label: "Acceso clientes", href: "#" }
     ]
@@ -345,11 +346,11 @@ export function FloatingActions() {
         </a>
       )}
       <Link
-        to="/contacto"
+        to={CTA_PATHS.contacto}
         className="float-cta"
-        onClick={() => trackEvent("cta_click", { label: "Agenda tu diagnóstico", destination: "/contacto", placement: "floating" })}
+        onClick={() => trackEvent("cta_click", { label: LABELS.diagnostico, destination: CTA_PATHS.contacto, placement: "floating" })}
       >
-        <Icon name="CalendarCheck" size={17} />Agenda tu diagnóstico
+        <Icon name="CalendarCheck" size={17} />{LABELS.diagnostico}
       </Link>
     </div>
   );

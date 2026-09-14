@@ -1,4 +1,6 @@
 // Contenido de los recorridos de Soluciones (fuente: wireframes fase 1.2)
+import { LABELS } from "../../lib/copy.js";
+
 export const RECORRIDOS = {
   empezar: {
     letter: "A",
@@ -8,7 +10,7 @@ export const RECORRIDOS = {
     title: "Apenas empiezo o estoy explorando el modelo",
     lead: "Quieres entender bien de qué se trata y arrancar con bases firmes, sin invertir a ciegas. Te acompañamos paso a paso: primero entiendes, luego diagnosticamos tu caso y solo entonces diseñamos un plan a tu medida.",
     heroActions: [
-      { label: "Agenda tu diagnóstico", to: "/contacto" },
+      { label: LABELS.diagnostico, to: "/contacto" },
       { label: "Conoce Consulting", to: "/consulting", variant: "secondary" }
     ],
     paraTi: [
@@ -40,9 +42,9 @@ export const RECORRIDOS = {
         { label: "Teléfono / WhatsApp", placeholder: "+52 33 1234 5678", type: "tel" },
         { label: "¿Qué te gustaría lograr?", placeholder: "Cuéntanos brevemente tu idea o tu duda", textarea: true }
       ],
-      submit: "Agenda tu diagnóstico"
+      submit: LABELS.diagnostico
     },
-    cta: { title: "¿Listo para arrancar bien?", desc: "La conversación empieza por entender tu caso, no por venderte un sistema.", primary: "Agenda tu diagnóstico", secondary: "Ver otros recorridos", secondaryTo: "/soluciones" }
+    cta: { title: "¿Listo para arrancar bien?", desc: "La conversación empieza por entender tu caso, no por venderte un sistema.", primary: LABELS.diagnostico, secondary: "Ver otros recorridos", secondaryTo: "/soluciones" }
   },
 
   "empresa-establecida": {
@@ -53,8 +55,8 @@ export const RECORRIDOS = {
     title: "Empresa establecida que busca escalar su operación",
     lead: "Tu negocio ya factura y crece, pero la operación empieza a apretar: sistemas que no conversan, procesos manuales y planes de expansión que necesitan tecnología a la altura. Te ayudamos a migrar, escalar y profesionalizar con una sola plataforma conectada.",
     heroActions: [
-      { label: "Solicita un demo protegido", to: "/contacto/demo" },
-      { label: "Agenda tu diagnóstico", to: "/contacto", variant: "secondary" }
+      { label: LABELS.demo, to: "/contacto/demo" },
+      { label: LABELS.diagnostico, to: "/contacto", variant: "secondary" }
     ],
     paraTi: [
       { icon: "Gauge", title: "Tu operación ya no escala", desc: "Tienes volumen, pero tus sistemas actuales frenan el crecimiento o exigen demasiado trabajo manual." },
@@ -93,9 +95,9 @@ export const RECORRIDOS = {
         { label: "Correo corporativo", placeholder: "nombre@empresa.com", type: "email", required: true },
         { label: "¿Qué sistemas usas hoy y qué quieres escalar?", placeholder: "Migración, omnicanalidad, multipaís, analítica…", textarea: true }
       ],
-      submit: "Solicita un demo protegido"
+      submit: LABELS.demo
     },
-    cta: { title: "Es momento de escalar tu operación", desc: "Empezamos por entender tu negocio y mostrarte la plataforma; el precio llega después del diagnóstico.", primary: "Solicita un demo protegido", primaryTo: "/contacto/demo", secondary: "Agenda tu diagnóstico", secondaryTo: "/contacto" }
+    cta: { title: "Es momento de escalar tu operación", desc: "Empezamos por entender tu negocio y mostrarte la plataforma; el precio llega después del diagnóstico.", primary: LABELS.demo, primaryTo: "/contacto/demo", secondary: LABELS.diagnostico, secondaryTo: "/contacto" }
   },
 
   "red-de-distribuidores": {
@@ -158,7 +160,7 @@ export const RECORRIDOS = {
     title: "Ya tengo software propio y quiero modernizar sin migrar todo",
     lead: "Tu empresa opera con tecnología propia que en parte ya quedó obsoleta, pero migrar toda la plataforma no es una opción hoy. No tienes que reemplazarlo todo: puedes conectarte a herramientas ágiles de Netzen y modernizar de forma gradual, sin detener tu operación.",
     heroActions: [
-      { label: "Agenda tu diagnóstico", to: "/contacto" },
+      { label: LABELS.diagnostico, to: "/contacto" },
       { label: "Ver integraciones", to: "/plataforma/extras", variant: "secondary" }
     ],
     paraTi: [
@@ -197,9 +199,9 @@ export const RECORRIDOS = {
         { label: "Correo corporativo", placeholder: "nombre@empresa.com", type: "email", required: true },
         { label: "¿Qué software propio usas y qué te gustaría modernizar?", placeholder: "Sistema actual, integraciones deseadas, procesos manuales…", textarea: true }
       ],
-      submit: "Agenda tu diagnóstico"
+      submit: LABELS.diagnostico
     },
-    cta: { title: "Moderniza sin migrar todo", desc: "Conecta tu sistema actual a herramientas ágiles y avanza por etapas. La conversación empieza por entender tu tecnología, no por reemplazarla.", primary: "Agenda tu diagnóstico", secondary: "Ver integraciones", secondaryTo: "/plataforma/extras" }
+    cta: { title: "Moderniza sin migrar todo", desc: "Conecta tu sistema actual a herramientas ágiles y avanza por etapas. La conversación empieza por entender tu tecnología, no por reemplazarla.", primary: LABELS.diagnostico, secondary: "Ver integraciones", secondaryTo: "/plataforma/extras" }
   },
 
   "cliente-actual": {

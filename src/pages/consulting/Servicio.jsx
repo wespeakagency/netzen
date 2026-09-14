@@ -4,6 +4,7 @@ import { Link, useParams, Navigate } from "react-router-dom";
 import { Icon, Button, Section, SectionHeading, Reveal, CheckLine, Steps } from "../../components/ui.jsx";
 import { PageHero, CTABand } from "../../components/chrome.jsx";
 import { SERVICIOS } from "./data.js";
+import { LABELS, CTA_PATHS } from "../../lib/copy.js";
 
 function ServicioAside({ s }) {
   return (
@@ -37,7 +38,7 @@ export default function ConsultingServicio() {
         title={s.title}
         lead={s.lead}
         actions={<>
-          <Button size="lg" to="/contacto">Agenda tu diagnóstico</Button>
+          <Button size="lg" to={CTA_PATHS.contacto} placement="hero">{LABELS.diagnostico}</Button>
           <Button size="lg" variant="secondary" to="/consulting">Volver a Consulting</Button>
         </>}
         aside={<ServicioAside s={s} />}
@@ -149,7 +150,7 @@ export default function ConsultingServicio() {
             <Reveal key={i} delay={i * 80}>
               <div className="card" style={{ borderColor: "var(--nz-red-tint-strong)", display: "flex", gap: 18, alignItems: "flex-start", flexWrap: "wrap" }}>
                 <span className="bubble"><Icon name={c.icon} size={21} /></span>
-                <div style={{ flex: 1, minWidth: 260 }}>
+                <div style={{ flex: 1, minWidth: "min(260px, 100%)" }}>
                   <p style={{ fontSize: 15, lineHeight: 1.65 }}>
                     <b style={{ color: "var(--nz-red)" }}>{c.text[0]}</b>{c.text[1]}
                   </p>
@@ -163,7 +164,7 @@ export default function ConsultingServicio() {
         </div>
       </Section>
 
-      <CTABand title="Agenda tu diagnóstico" description={s.ctaDesc} primaryLabel="Agenda tu diagnóstico" primaryTo="/contacto" secondaryLabel="Ver Consulting" secondaryTo="/consulting" />
+      <CTABand title={LABELS.diagnostico} description={s.ctaDesc} primaryLabel={LABELS.diagnostico} primaryTo="/contacto" secondaryLabel="Ver Consulting" secondaryTo="/consulting" />
     </>
   );
 }

@@ -1,11 +1,10 @@
 // /recursos/blog · feed de Substack (Netzen Publication)
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { Icon, Section, SectionHeading, Reveal } from "../../components/ui.jsx";
+import { Icon, Button, Section, SectionHeading, Reveal } from "../../components/ui.jsx";
 import { PageHero, CTABand } from "../../components/chrome.jsx";
-import { Newsletter } from "./Hub.jsx";
 import { useSubstackFeed, SUBSTACK_URL } from "../../hooks/useSubstackFeed.js";
 import { trackEvent } from "../../lib/analytics.js";
-import { isRouteEnabled } from "../../lib/featureFlags.js";
+import { LABELS } from "../../lib/copy.js";
 
 function PostCard({ post }) {
   return (
@@ -270,15 +269,16 @@ export default function Blog() {
           <>
             <PostsCarousel posts={posts} />
             <div style={{ marginTop: 34, display: "flex", justifyContent: "center" }}>
-              <a
+              <Button
                 href={SUBSTACK_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn--secondary"
+                variant="secondary"
+                block
+                placement="blog-view-all"
+                style={{ maxWidth: 420 }}
                 onClick={() => trackEvent("blog_substack_click", { source: "view_all" })}
               >
                 Ver todas las publicaciones en Substack
-              </a>
+              </Button>
             </div>
           </>
         )}
@@ -288,21 +288,19 @@ export default function Blog() {
         <SectionHeading
           eyebrow="Boletín"
           title="No te pierdas una publicación"
-          lead="Elige el canal que prefieras: recibe el boletín interno de Netzen o suscríbete directo al Substack."
+          lead="Suscríbete directo al Substack y recibe cada publicación en tu correo apenas se publica."
         />
-        <div className="grid-2" style={{ alignItems: "stretch", gap: 32, marginTop: 32 }}>
-          <Reveal style={{ height: "100%" }}><Newsletter compact /></Reveal>
-          <Reveal variant="right" style={{ height: "100%" }}><SubstackEmbed /></Reveal>
+        <div style={{ maxWidth: 560, margin: "32px auto 0" }}>
+          <Reveal><SubstackEmbed /></Reveal>
         </div>
       </Section>
 
       <CTABand
         title="¿Quieres aplicar esto a tu operación?"
         description="Agenda un diagnóstico y convierte la teoría en un plan."
-        primaryLabel="Agenda tu diagnóstico"
+        primaryLabel={LABELS.diagnostico}
         primaryTo="/contacto"
-        secondaryLabel={isRouteEnabled("/recursos/guias") ? "Ver guías" : "Ver glosario"}
-        secondaryTo={isRouteEnabled("/recursos/guias") ? "/recursos/guias" : "/recursos/glosario"}
+        secondaryLabel={null}
       />
     </>
   );

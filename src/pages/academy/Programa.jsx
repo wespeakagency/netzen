@@ -150,7 +150,7 @@ export default function AcademyPrograma() {
         <Reveal style={{ marginTop: 30 }}>
           <div className="card" style={{ borderColor: "var(--nz-red-tint-strong)", display: "flex", gap: 18, alignItems: "flex-start", flexWrap: "wrap" }}>
             <span className="bubble"><Icon name={p.conexion.icon} size={21} /></span>
-            <div style={{ flex: 1, minWidth: 260 }}>
+            <div style={{ flex: 1, minWidth: "min(260px, 100%)" }}>
               <p style={{ fontSize: 15, lineHeight: 1.65 }}>
                 <b style={{ color: "var(--nz-red)" }}>{p.conexion.text[0]}</b>{p.conexion.text[1]}
               </p>

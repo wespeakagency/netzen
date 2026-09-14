@@ -6,6 +6,7 @@ import { PageHero, CTABand } from "../../components/chrome.jsx";
 import { WEBINARS, GRABACIONES } from "./data.js";
 import { trackEvent } from "../../lib/analytics.js";
 import { submitLead, FormSubmitError } from "../../lib/forms.js";
+import { LABELS } from "../../lib/copy.js";
 
 const TEMAS = ["Todos", "Industria", "Tecnología / plataforma", "Academy", "Consulting", "Casos"];
 
@@ -204,7 +205,7 @@ export default function Webinars() {
       <CTABand
         title="¿Prefieres una sesión 1 a 1?"
         description="Agenda un diagnóstico y resolvemos tu caso concreto."
-        primaryLabel="Agenda tu diagnóstico"
+        primaryLabel={LABELS.diagnostico}
         primaryTo="/contacto"
         secondaryLabel="Ver recursos"
         secondaryTo="/recursos"
