@@ -1,5 +1,5 @@
 import React from "react";
-import { Badge, Button, Icon, Reveal, Section, SectionHeading } from "../../components/ui.jsx";
+import { Button, Icon, Reveal, Section, SectionHeading } from "../../components/ui.jsx";
 import { CTABand, PageHero } from "../../components/chrome.jsx";
 import identityImage from "../../assets/netzen-human-values-v2.jpg";
 import { LABELS, CTA_PATHS } from "../../lib/copy.js";
@@ -83,7 +83,6 @@ export default function MVV() {
       <PageHero
         crumbs={[{ label: "Nosotros", to: "/nosotros" }, { label: "Misión, visión y valores" }]}
         eyebrow="Nosotros · Identidad"
-        badge={<Badge tone="success">Textos oficiales recibidos</Badge>}
         title={<>Empresa humana, crecimiento <span style={{ color: "var(--nz-red)" }}>consciente</span></>}
         lead="La identidad de Netzen integra tecnología, conocimiento y desarrollo humano para generar crecimiento sostenible e impacto económico y social."
         actions={
