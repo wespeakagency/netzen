@@ -28,8 +28,10 @@ const GRANTED = {
 function pushConsent(state, meta = {}) {
   if (typeof window === "undefined") return;
   window.dataLayer = window.dataLayer || [];
-  // Google Consent Mode v2: comando "consent" con "update"
-  window.dataLayer.push(["consent", "update", state]);
+  // Google Consent Mode v2: GTM reconoce el comando "consent" solo cuando
+  // se pushea un Arguments object (patrón gtag), no un Array literal.
+  function gtag() { window.dataLayer.push(arguments); }
+  gtag("consent", "update", state);
   // Evento custom para triggers manuales en GTM si el marketer los quiere
   window.dataLayer.push({
     event: "netzen_consent_update",
