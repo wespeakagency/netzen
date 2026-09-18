@@ -6,6 +6,7 @@ import { PageHero, CTABand } from "../../components/chrome.jsx";
 import { RECORRIDOS } from "./data.js";
 import { trackEvent } from "../../lib/analytics.js";
 import { submitLead, FormSubmitError } from "../../lib/forms.js";
+import { validateFields, hasErrors } from "../../lib/formValidation.js";
 
 // Mapea un label de campo dinámico al key estándar que espera el backend.
 // Si no matchea ninguno conocido, cae en "notes" (se concatena todo).
@@ -51,11 +52,31 @@ function FormRecorrido({ form, slug }) {
   const [values, setValues] = useState(initial);
   const [status, setStatus] = useState("idle"); // idle | sending | sent | error
   const [errorMsg, setErrorMsg] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
-  const update = (label) => (e) => setValues((prev) => ({ ...prev, [label]: e.target.value }));
+  const update = (label) => (e) => {
+    setValues((prev) => ({ ...prev, [label]: e.target.value }));
+    if (fieldErrors[label]) setFieldErrors((prev) => { const n = { ...prev }; delete n[label]; return n; });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const rules = {};
+    form.fields.forEach((f) => {
+      if (!f.required) return;
+      const isEmail = labelToFieldKey(f.label) === "email";
+      rules[f.label] = { required: true, ...(isEmail ? { email: true } : {}) };
+    });
+    const errors = validateFields(values, rules);
+    if (hasErrors(errors)) {
+      setFieldErrors(errors);
+      setStatus("error");
+      setErrorMsg("Revisa los campos marcados antes de enviar.");
+      return;
+    }
+
+    setFieldErrors({});
     setStatus("sending");
     setErrorMsg("");
 
@@ -100,6 +121,7 @@ function FormRecorrido({ form, slug }) {
     setValues(initial);
     setStatus("idle");
     setErrorMsg("");
+    setFieldErrors({});
   };
 
   if (status === "sent") {
@@ -131,11 +153,12 @@ function FormRecorrido({ form, slug }) {
     >
       <div style={{ display: "grid", gap: 18 }}>
         {form.fields.map((f) => (
-          <div className="field" key={f.label}>
+          <div className={`field${fieldErrors[f.label] ? " has-error" : ""}`} key={f.label}>
             <label>{f.label} {f.required && <span className="req">*</span>}</label>
             {f.textarea
-              ? <textarea placeholder={f.placeholder} required={f.required} value={values[f.label]} onChange={update(f.label)} />
-              : <input type={f.type || "text"} placeholder={f.placeholder} required={f.required} value={values[f.label]} onChange={update(f.label)} />}
+              ? <textarea placeholder={f.placeholder} required={f.required} value={values[f.label]} onChange={update(f.label)} aria-invalid={fieldErrors[f.label] ? "true" : undefined} />
+              : <input type={f.type || "text"} placeholder={f.placeholder} required={f.required} value={values[f.label]} onChange={update(f.label)} aria-invalid={fieldErrors[f.label] ? "true" : undefined} />}
+            {fieldErrors[f.label] && <span className="field-error">{fieldErrors[f.label]}</span>}
           </div>
         ))}
 

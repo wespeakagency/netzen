@@ -7,6 +7,7 @@ import { Container } from "../../components/ui.jsx";
 import { WHATSAPP_URL, HAS_WHATSAPP } from "../../lib/nav.js";
 import { trackEvent } from "../../lib/analytics.js";
 import { submitLead, FormSubmitError } from "../../lib/forms.js";
+import { validateFields, hasErrors } from "../../lib/formValidation.js";
 import { LABELS } from "../../lib/copy.js";
 
 const SITUACIONES = [
@@ -68,11 +69,29 @@ function FormularioContacto({ demo }) {
   const [situacion, setSituacion] = useState("A");
   const [status, setStatus] = useState("idle"); // idle | sending | sent | error
   const [errorMsg, setErrorMsg] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
-  const update = (key) => (e) => setValues((prev) => ({ ...prev, [key]: e.target.value }));
+  const update = (key) => (e) => {
+    setValues((prev) => ({ ...prev, [key]: e.target.value }));
+    if (fieldErrors[key]) setFieldErrors((prev) => { const n = { ...prev }; delete n[key]; return n; });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const errors = validateFields(values, {
+      nombre: { required: true },
+      empresa: { required: true },
+      email: { required: true, email: true }
+    });
+    if (hasErrors(errors)) {
+      setFieldErrors(errors);
+      setStatus("error");
+      setErrorMsg("Revisa los campos marcados antes de enviar.");
+      return;
+    }
+
+    setFieldErrors({});
     setStatus("sending");
     setErrorMsg("");
 
@@ -112,6 +131,7 @@ function FormularioContacto({ demo }) {
     setSituacion("A");
     setStatus("idle");
     setErrorMsg("");
+    setFieldErrors({});
   };
 
   if (status === "sent") {
@@ -122,7 +142,7 @@ function FormularioContacto({ demo }) {
         </span>
         <h2 style={{ marginTop: 20, fontSize: 24, fontWeight: 700 }}>¡Recibimos tu solicitud!</h2>
         <p style={{ marginTop: 10, fontSize: 15.5, lineHeight: 1.6, color: "var(--text-secondary)" }}>
-          Un ejecutivo se pondrá en contacto para tu {demo ? "demo protegido" : "diagnóstico"} por WhatsApp o correo en horario hábil.
+          Un ejecutivo se pondrá en contacto para tu {demo ? "demo" : "diagnóstico"} por WhatsApp o correo en horario hábil.
         </p>
         <div style={{ marginTop: 24, display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
           <Button variant="secondary" onClick={resetForm}>Enviar otra solicitud</Button>
@@ -144,22 +164,25 @@ function FormularioContacto({ demo }) {
       <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 18 }}>{demo ? "Formulario de calificación" : "Solicita tu diagnóstico"}</h3>
 
       <div className="contact-grid">
-        <div className="field">
+        <div className={`field${fieldErrors.nombre ? " has-error" : ""}`}>
           <label htmlFor="c-nombre">{demo ? "Nombre y cargo" : "Nombre completo"} <span className="req">*</span></label>
-          <input id="c-nombre" name="nombre" value={values.nombre} onChange={update("nombre")} placeholder={demo ? "Nombre · Dirección / Operaciones" : "María González"} required autoComplete="name" />
+          <input id="c-nombre" name="nombre" value={values.nombre} onChange={update("nombre")} placeholder={demo ? "Nombre · Dirección / Operaciones" : "María González"} required autoComplete="name" aria-invalid={fieldErrors.nombre ? "true" : undefined} />
+          {fieldErrors.nombre && <span className="field-error">{fieldErrors.nombre}</span>}
         </div>
-        <div className="field">
+        <div className={`field${fieldErrors.empresa ? " has-error" : ""}`}>
           <label htmlFor="c-empresa">Empresa <span className="req">*</span></label>
-          <input id="c-empresa" name="empresa" value={values.empresa} onChange={update("empresa")} placeholder="Nombre de tu empresa" required autoComplete="organization" />
+          <input id="c-empresa" name="empresa" value={values.empresa} onChange={update("empresa")} placeholder="Nombre de tu empresa" required autoComplete="organization" aria-invalid={fieldErrors.empresa ? "true" : undefined} />
+          {fieldErrors.empresa && <span className="field-error">{fieldErrors.empresa}</span>}
         </div>
         <div className="field">
           <label htmlFor="c-whatsapp">WhatsApp</label>
           <input id="c-whatsapp" name="whatsapp" type="tel" value={values.whatsapp} onChange={update("whatsapp")} placeholder="+52 33 1234 5678" autoComplete="tel" />
           <span className="hint">Con código de país</span>
         </div>
-        <div className="field">
+        <div className={`field${fieldErrors.email ? " has-error" : ""}`}>
           <label htmlFor="c-email">Email {demo ? "corporativo" : ""} <span className="req">*</span></label>
-          <input id="c-email" name="email" type="email" value={values.email} onChange={update("email")} placeholder="nombre@empresa.com" required autoComplete="email" />
+          <input id="c-email" name="email" type="email" value={values.email} onChange={update("email")} placeholder="nombre@empresa.com" required autoComplete="email" aria-invalid={fieldErrors.email ? "true" : undefined} />
+          {fieldErrors.email && <span className="field-error">{fieldErrors.email}</span>}
         </div>
         <div className="field">
           <label htmlFor="c-pais">País</label>
@@ -284,11 +307,11 @@ export default function Contacto({ demo = false }) {
     <>
       <div className="phero" style={{ borderBottom: "none", background: "var(--nz-white)" }}>
         <div className="phero__ring" style={{ width: 560, height: 560, right: -200, top: -240, opacity: 0.7 }} />
-        <Breadcrumbs items={demo ? [{ label: "Contacto", to: "/contacto" }, { label: "Demo protegido" }] : [{ label: "Contacto" }]} />
+        <Breadcrumbs items={demo ? [{ label: "Contacto", to: "/contacto" }, { label: "Demo" }] : [{ label: "Contacto" }]} />
         <Container>
           <div className="cols-form" style={{ padding: "44px 0 72px" }}>
             <div className="anim-fade-up">
-              <span className="eyebrow">{demo ? "Demo protegido" : "Empieza por el diagnóstico"}</span>
+              <span className="eyebrow">{demo ? "Demo" : "Empieza por el diagnóstico"}</span>
               <h1 style={{ marginTop: 16 }}>
                 {demo ? <>Ve la plataforma en acción, <span style={{ color: "var(--nz-red)" }}>de forma controlada</span></> : <>Empecemos por <span style={{ color: "var(--nz-red)" }}>entender tu operación</span></>}
               </h1>

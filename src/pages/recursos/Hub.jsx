@@ -5,6 +5,7 @@ import { Icon, Button, Section, SectionHeading, Reveal, Badge, ConsentLine } fro
 import { PageHero, CTABand } from "../../components/chrome.jsx";
 import { trackEvent } from "../../lib/analytics.js";
 import { submitLead, FormSubmitError } from "../../lib/forms.js";
+import { validateFields, hasErrors } from "../../lib/formValidation.js";
 import { isRouteEnabled } from "../../lib/featureFlags.js";
 import { LABELS, CTA_PATHS } from "../../lib/copy.js";
 
@@ -40,9 +41,18 @@ function Newsletter({ compact }) {
   const [website, setWebsite] = useState("");
   const [status, setStatus] = useState("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const errors = validateFields({ email }, { email: { required: true, email: true } });
+    if (hasErrors(errors)) {
+      setFieldErrors(errors);
+      setStatus("error");
+      setErrorMsg("Ingresa un correo válido para suscribirte.");
+      return;
+    }
+    setFieldErrors({});
     setStatus("sending");
     setErrorMsg("");
     trackEvent("form_submit", { form_type: "newsletter" });
@@ -86,9 +96,10 @@ function Newsletter({ compact }) {
                 <input id="nl-nombre" name="nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="María González" autoComplete="name" />
               </div>
             )}
-            <div className="field">
+            <div className={`field${fieldErrors.email ? " has-error" : ""}`}>
               <label htmlFor="nl-email">Correo corporativo <span className="req">*</span></label>
-              <input id="nl-email" name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nombre@empresa.com" required autoComplete="email" />
+              <input id="nl-email" name="email" type="email" value={email} onChange={(e) => { setEmail(e.target.value); if (fieldErrors.email) setFieldErrors({}); }} placeholder="nombre@empresa.com" required autoComplete="email" aria-invalid={fieldErrors.email ? "true" : undefined} />
+              {fieldErrors.email && <span className="field-error">{fieldErrors.email}</span>}
             </div>
             <div aria-hidden="true" style={{ position: "absolute", left: "-10000px", width: 1, height: 1, overflow: "hidden" }}>
               <label>Sitio web (no llenar)<input type="text" name="website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} /></label>

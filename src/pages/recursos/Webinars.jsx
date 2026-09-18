@@ -6,6 +6,7 @@ import { PageHero, CTABand } from "../../components/chrome.jsx";
 import { WEBINARS, GRABACIONES } from "./data.js";
 import { trackEvent } from "../../lib/analytics.js";
 import { submitLead, FormSubmitError } from "../../lib/forms.js";
+import { validateFields, hasErrors } from "../../lib/formValidation.js";
 import { LABELS } from "../../lib/copy.js";
 
 const TEMAS = ["Todos", "Industria", "Tecnología / plataforma", "Academy", "Consulting", "Casos"];
@@ -19,9 +20,25 @@ function RegistroForm() {
   const [website, setWebsite] = useState("");
   const [status, setStatus] = useState("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  const clearError = (key) => {
+    if (fieldErrors[key]) setFieldErrors((prev) => { const n = { ...prev }; delete n[key]; return n; });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const errors = validateFields({ nombre, email }, {
+      nombre: { required: true },
+      email: { required: true, email: true }
+    });
+    if (hasErrors(errors)) {
+      setFieldErrors(errors);
+      setStatus("error");
+      setErrorMsg("Revisa los campos marcados antes de enviar.");
+      return;
+    }
+    setFieldErrors({});
     setStatus("sending");
     setErrorMsg("");
     trackEvent("form_submit", { form_type: "webinar" });
@@ -57,17 +74,19 @@ function RegistroForm() {
     <form className="card card--pad-lg" onSubmit={handleSubmit} noValidate style={{ boxShadow: "var(--shadow-md)" }}>
       <h3 style={{ fontSize: 19, fontWeight: 700, marginBottom: 16 }}>Formulario de registro</h3>
       <div style={{ display: "grid", gap: 14 }}>
-        <div className="field">
+        <div className={`field${fieldErrors.nombre ? " has-error" : ""}`}>
           <label htmlFor="wb-nombre">Nombre <span className="req">*</span></label>
-          <input id="wb-nombre" name="nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="María González" required autoComplete="name" />
+          <input id="wb-nombre" name="nombre" value={nombre} onChange={(e) => { setNombre(e.target.value); clearError("nombre"); }} placeholder="María González" required autoComplete="name" aria-invalid={fieldErrors.nombre ? "true" : undefined} />
+          {fieldErrors.nombre && <span className="field-error">{fieldErrors.nombre}</span>}
         </div>
         <div className="field">
           <label htmlFor="wb-empresa">Empresa</label>
           <input id="wb-empresa" name="empresa" value={empresa} onChange={(e) => setEmpresa(e.target.value)} placeholder="Nombre de tu empresa" autoComplete="organization" />
         </div>
-        <div className="field">
+        <div className={`field${fieldErrors.email ? " has-error" : ""}`}>
           <label htmlFor="wb-email">Correo corporativo <span className="req">*</span></label>
-          <input id="wb-email" name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nombre@empresa.com" required autoComplete="email" />
+          <input id="wb-email" name="email" type="email" value={email} onChange={(e) => { setEmail(e.target.value); clearError("email"); }} placeholder="nombre@empresa.com" required autoComplete="email" aria-invalid={fieldErrors.email ? "true" : undefined} />
+          {fieldErrors.email && <span className="field-error">{fieldErrors.email}</span>}
         </div>
         <div className="field">
           <label htmlFor="wb-webinar">¿Qué webinar te interesa?</label>
