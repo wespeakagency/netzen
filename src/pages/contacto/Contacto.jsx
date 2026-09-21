@@ -95,7 +95,7 @@ function FormularioContacto({ demo }) {
     setStatus("sending");
     setErrorMsg("");
 
-    const formType = demo ? "demo_protegido" : "diagnostico";
+    const formType = demo ? "demo" : "diagnostico";
     trackEvent("form_submit", { form_type: formType, route: situacion });
 
     try {

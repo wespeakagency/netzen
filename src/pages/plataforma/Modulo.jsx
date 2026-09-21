@@ -296,7 +296,7 @@ export default function PlataformaModulo() {
 
       <CTABand
         title={m.ctaTitle}
-        description="Demo protegido para prospectos calificados: teaser público + acceso restringido, guiado por un consultor."
+        description="Demo para prospectos calificados: teaser público + acceso restringido, guiado por un consultor."
         primaryLabel="Solicitar demo"
         primaryTo="/contacto/demo"
         secondaryLabel={LABELS.diagnostico}

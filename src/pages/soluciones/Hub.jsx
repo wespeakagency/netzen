@@ -171,7 +171,7 @@ export default function SolucionesHub() {
         description="La conversación empieza por valor y alcance, no por precio."
         primaryLabel={LABELS.diagnostico}
         primaryTo="/contacto"
-        secondaryLabel="Demo protegido"
+        secondaryLabel="Demo"
         secondaryTo="/contacto/demo"
       />
     </>

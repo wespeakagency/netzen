@@ -8,7 +8,7 @@ import { NAV } from "../lib/nav.js";
 const EXTRA = [
   { label: "Home", path: "/" },
   { label: "Contacto · Agenda tu diagnóstico", path: "/contacto" },
-  { label: "Demo protegido", path: "/contacto/demo" }
+  { label: "Demo", path: "/contacto/demo" }
 ];
 
 export default function Mapa() {

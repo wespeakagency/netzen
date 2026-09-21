@@ -76,7 +76,7 @@ export const RECORRIDOS = {
     caminoTitle: "Tu camino para escalar",
     caminoEyebrow: "Recorrido recomendado · combina los tres núcleos",
     camino: [
-      { title: "Demo protegido + Consulting", core: "Consulting", desc: "Ves la plataforma funcionando y diagnosticamos tu operación actual: qué migrar, qué integrar y cómo escalar." },
+      { title: "Demo + Consulting", core: "Consulting", desc: "Ves la plataforma funcionando y diagnosticamos tu operación actual: qué migrar, qué integrar y cómo escalar." },
       { title: "Migra a la Plataforma", core: "Plataforma", desc: "Trasladamos tu operación a una plataforma configurable mediante contrato de uso de licencia en modalidad de renta, con consultoría incluida en la implementación." },
       { title: "Academy · Distribuidor Independiente", core: "Academy", desc: "Profesionalizas a la red de distribuidores y la fuerza comercial que sostiene el crecimiento (venta B2B)." },
       { title: "Escala", core: "Plataforma", desc: "Activas omnicanalidad, multipaís, analítica y predicción para crecer con datos y soporte continuo." }
@@ -86,7 +86,7 @@ export const RECORRIDOS = {
       { icon: "Map", text: "Para abrir mercados nuevos, conecta con Consulting · Estrategia y expansión.", linkLabel: "Ver Estrategia", to: "/consulting/estrategia" }
     ],
     form: {
-      eyebrow: "Agenda tu demo protegido",
+      eyebrow: "Agenda tu demo",
       title: "Cuéntanos sobre tu operación actual",
       note: "Te mostramos cómo escalar sin frenar el negocio.",
       fields: [

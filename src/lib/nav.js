@@ -97,7 +97,7 @@ export const ROUTES = [
   { path: "/", label: "Home" },
   ...NAV.flatMap((g) => [{ path: g.path, label: g.label + " (hub)" }, ...g.children.map((c) => ({ path: c.path, label: c.label, group: g.label }))]),
   { path: "/contacto", label: "Contacto · Agenda tu diagnóstico" },
-  { path: "/contacto/demo", label: "Demo protegido" },
+  { path: "/contacto/demo", label: "Demo" },
   { path: "/legal/privacidad", label: "Aviso de privacidad", group: "Legal" },
   { path: "/legal/terminos", label: "Términos y condiciones", group: "Legal" },
   { path: "/mapa", label: "Mapa del sitio" }

@@ -1,6 +1,6 @@
 export const LABELS = {
   diagnostico: "Agenda tu diagnóstico",
-  demo: "Solicita un demo protegido",
+  demo: "Solicita un demo",
 };
 
 export const CTA_PATHS = {

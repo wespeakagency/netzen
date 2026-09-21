@@ -66,11 +66,11 @@ const RUTAS = {
     panelDesc: "Plataforma y Consulting trabajan juntos para migrar y escalar con orden.",
     steps: [
       { title: "Agenda tu diagnóstico", description: "Mapeamos tu operación actual y a dónde quieres escalar." },
-      { title: "Solicita un demo protegido", description: "Acceso controlado para prospectos calificados." },
+      { title: "Solicita un demo", description: "Acceso controlado para prospectos calificados." },
       { title: "Plataforma + Consulting", description: "Migración, omnicanalidad y multipaís con consultoría incluida." }
     ],
     cta: { label: "Escalar", to: "/soluciones/empresa-establecida" },
-    note: "Demo protegido para prospectos calificados"
+    note: "Demo para prospectos calificados"
   },
   C: {
     letter: "C", title: "Quiero profesionalizar mi red", quote: "«A mí como empresario, o a mi red de distribuidores.»",
@@ -252,7 +252,7 @@ export default function Home() {
               </p>
               <div style={{ marginTop: 32, display: "flex", gap: 14, flexWrap: "wrap" }}>
                 <Button size="lg" to={CTA_PATHS.contacto} placement="hero" className="btn--glow-pulse">{LABELS.diagnostico}</Button>
-                <Button size="lg" variant="secondary" to="/contacto/demo">Ver demo protegido</Button>
+                <Button size="lg" variant="secondary" to="/contacto/demo">Ver demo</Button>
               </div>
               <div style={{ marginTop: 36, paddingTop: 22, borderTop: "1px solid var(--border-default)", display: "flex", alignItems: "center", gap: 12 }}>
                 <img src={isotipo} alt="" style={{ height: 20, display: "block" }} />
