@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Icon, Button, Section, SectionHeading, Reveal, Badge } from "../../components/ui.jsx";
 import { PageHero, CTABand } from "../../components/chrome.jsx";
 import { LABELS, CTA_PATHS } from "../../lib/copy.js";
+import { isFeatureEnabled } from "../../lib/featureFlags.js";
 
 const RAZONES = [
   { icon: "Blocks", title: "Ecosistema integral", desc: "Plataforma, consultoría y formación en un mismo lugar. No tienes que coordinar a tres proveedores distintos: la solución es de principio a fin." },
@@ -51,6 +52,7 @@ export default function PorQueNetzen() {
         </div>
       </Section>
 
+      {isFeatureEnabled("nosotros_certificaciones") && (
       <Section bg="card" style={{ borderTop: "1px solid var(--border-default)" }}>
         <SectionHeading
           eyebrow="Calidad y estándares"
@@ -78,6 +80,7 @@ export default function PorQueNetzen() {
           ))}
         </div>
       </Section>
+      )}
 
       <CTABand
         title="Compruébalo en una conversación"

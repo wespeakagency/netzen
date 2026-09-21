@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Icon, Button, Section, SectionHeading, Reveal, Badge, Stat } from "../../components/ui.jsx";
 import { PageHero, CTABand } from "../../components/chrome.jsx";
 import isotipo from "../../assets/netzen-isotipo-red.png";
-import { isRouteEnabled } from "../../lib/featureFlags.js";
+import { isRouteEnabled, isFeatureEnabled } from "../../lib/featureFlags.js";
 import { LABELS, CTA_PATHS } from "../../lib/copy.js";
 
 const ALL_SUBPAGES = [
@@ -13,9 +13,9 @@ const ALL_SUBPAGES = [
   { to: "/nosotros/equipo", icon: "Users", title: "Liderazgo y equipo", desc: "Las personas detrás de la plataforma: experiencia técnica y de industria como respaldo de autoridad." },
   { to: "/nosotros/eventos", icon: "CalendarDays", title: "Eventos de industria", desc: "Encuentros que reunieron a la industria entre 2017 y 2018, con la intención de reactivarlos hacia 2027." },
   { to: "/nosotros/mision-vision-valores", icon: "Target", title: "Misión, visión y valores", desc: "Lo que nos mueve y los principios con los que operamos." },
-  { to: "/nosotros/por-que-netzen", icon: "Award", title: "Certificaciones", desc: "Certificaciones y estándares de calidad del software. Se detallan dentro de «Por qué Netzen»." }
+  { to: "/nosotros/por-que-netzen", icon: "Award", title: "Certificaciones", desc: "Certificaciones y estándares de calidad del software. Se detallan dentro de «Por qué Netzen».", featureFlag: "nosotros_certificaciones" }
 ];
-const SUBPAGES = ALL_SUBPAGES.filter((s) => isRouteEnabled(s.to));
+const SUBPAGES = ALL_SUBPAGES.filter((s) => isRouteEnabled(s.to) && (!s.featureFlag || isFeatureEnabled(s.featureFlag)));
 
 function TimelineMini() {
   const hitos = [
@@ -82,7 +82,7 @@ export default function NosotrosHub() {
               on="dark"
               eyebrow="Trayectoria"
               title="La confianza se construye antes de hablar de precio"
-              lead="Historia, liderazgo y trato humano. La trayectoria se cuenta en hitos y épocas; los números finos se validan antes de publicarse."
+              lead="Historia, liderazgo y trato humano. La trayectoria se cuenta en hitos y épocas que respaldan nuestro criterio de industria."
             />
             <Reveal delay={140} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 26 }}>
               <Stat value={30} prefix="+" label="años acompañando a la industria" dark />

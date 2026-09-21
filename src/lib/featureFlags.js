@@ -6,6 +6,8 @@ export const FEATURES = {
   recursos_guias: false,
   recursos_webinars: false,
   nosotros_eventos: false,
+  nosotros_certificaciones: false,
+  nosotros_liderazgo: false,
 };
 
 const ROUTE_FLAG_MAP = {
@@ -19,4 +21,8 @@ export function isRouteEnabled(path) {
   const flag = ROUTE_FLAG_MAP[path];
   if (!flag) return true;
   return FEATURES[flag] === true;
+}
+
+export function isFeatureEnabled(key) {
+  return FEATURES[key] === true;
 }

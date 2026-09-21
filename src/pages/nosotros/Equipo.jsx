@@ -3,6 +3,7 @@ import React from "react";
 import { Icon, Button, Section, SectionHeading, Reveal } from "../../components/ui.jsx";
 import { PageHero, CTABand } from "../../components/chrome.jsx";
 import { LABELS, CTA_PATHS } from "../../lib/copy.js";
+import { isFeatureEnabled } from "../../lib/featureFlags.js";
 
 const LIDERES = [
   { rol: "Dirección general", icon: "Compass", desc: "Trayectoria y especialidad por confirmar con dirección. Años de experiencia en el sector y rol en la visión de Netzen." },
@@ -31,6 +32,7 @@ export default function Equipo() {
         </>}
       />
 
+      {isFeatureEnabled("nosotros_liderazgo") && (
       <Section bg="page">
         <SectionHeading eyebrow="Liderazgo" title="Dirección con trayectoria en tecnología y en la industria" lead="Nombres, cargos y fotos se validan con dirección antes de publicar." />
         <div className="grid-3" style={{ marginTop: 44 }}>
@@ -53,6 +55,7 @@ export default function Equipo() {
           ))}
         </div>
       </Section>
+      )}
 
       <Section bg="card" style={{ borderTop: "1px solid var(--border-default)" }}>
         <SectionHeading eyebrow="El equipo" title="Áreas que acompañan al cliente de principio a fin" />
