@@ -4,6 +4,7 @@ import { SiteHeader, SiteFooter, FloatingActions, ScrollToTop } from "./componen
 import { useRevealObserver } from "./components/ui.jsx";
 import ConsentBanner from "./components/ConsentBanner.jsx";
 import { trackPageView } from "./lib/analytics.js";
+import { trackPreviousRoute } from "./lib/attribution.js";
 import { isRouteEnabled } from "./lib/featureFlags.js";
 
 import Home from "./pages/Home.jsx";
@@ -44,6 +45,7 @@ export default function App() {
   const location = useLocation();
   useRevealObserver([location.pathname]);
   useEffect(() => {
+    trackPreviousRoute(location.pathname);
     trackPageView(location.pathname);
   }, [location.pathname]);
   return (
