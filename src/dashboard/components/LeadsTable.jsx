@@ -12,7 +12,6 @@ const COLUMNS = [
   { key: "work_email", label: "Email", type: "text" },
   { key: "whatsapp", label: "WhatsApp", type: "text" },
   { key: "country_code", label: "País", type: "country", width: "60px" },
-  { key: "owner", label: "Propietario", type: "text" },
   { key: "created_at", label: "Creado", type: "date", width: "100px" },
 ];
 

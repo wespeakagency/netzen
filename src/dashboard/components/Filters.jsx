@@ -128,21 +128,7 @@ export function Filters({ filters, setFilters, leads }) {
           </select>
         </div>
 
-        <div className="filter-group">
-          <label className="filter-label">Propietario</label>
-          <select
-            value={filters.owner || ""}
-            onChange={(e) => setValue("owner", e.target.value)}
-            className="input-select"
-          >
-            <option value="">Todos</option>
-            {owners.map((o) => (
-              <option key={o} value={o}>{o}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="filter-group">
+<div className="filter-group">
           <label className="filter-label">Desde</label>
           <input
             type="date"
@@ -206,7 +192,6 @@ export function applyFilters(leads, filters) {
         lead.full_name,
         lead.work_email,
         lead.company_name,
-        lead.job_title,
       ]
         .filter(Boolean)
         .join(" ")
