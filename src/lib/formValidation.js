@@ -10,6 +10,18 @@ export function validateFields(values, rules) {
     }
     if (value && rule.email && !EMAIL_RE.test(value)) {
       errors[key] = rule.emailMessage || "Ingresa un correo válido.";
+      continue;
+    }
+    if (value && (rule.digitsMin || rule.digitsMax)) {
+      const digits = value.replace(/\D/g, "");
+      if (rule.digitsMin && digits.length < rule.digitsMin) {
+        errors[key] = rule.digitsMessage || `Debe tener al menos ${rule.digitsMin} dígitos.`;
+        continue;
+      }
+      if (rule.digitsMax && digits.length > rule.digitsMax) {
+        errors[key] = rule.digitsMessage || `No debe tener más de ${rule.digitsMax} dígitos.`;
+        continue;
+      }
     }
   }
   return errors;

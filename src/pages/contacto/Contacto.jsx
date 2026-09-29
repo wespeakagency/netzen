@@ -9,6 +9,7 @@ import { trackEvent } from "../../lib/analytics.js";
 import { submitLead, FormSubmitError } from "../../lib/forms.js";
 import { validateFields, hasErrors } from "../../lib/formValidation.js";
 import { LABELS } from "../../lib/copy.js";
+import { PAISES, getLada, buildWhatsappE164 } from "../../lib/paisesLadas.js";
 
 const SITUACIONES = [
   { k: "A", label: "Apenas empiezo / explorando" },
@@ -18,7 +19,6 @@ const SITUACIONES = [
 ];
 
 const MODELOS = ["Venta directa", "Multinivel", "Retail", "Franquicias", "E-commerce", "Punto de venta"];
-const PAISES = ["México", "Colombia", "Perú", "Ecuador", "Estados Unidos", "Otro"];
 const TAMANIOS = ["Menos de 100 distribuidores", "100 – 1,000", "1,000 – 10,000", "Más de 10,000"];
 
 // Inputs de calificación · alimentan el scoring del CRM (Fase 2).
@@ -51,6 +51,7 @@ const INITIAL = {
   nombre: "",
   empresa: "",
   whatsapp: "",
+  ladaCustom: "",
   email: "",
   pais: "",
   modelo: "",
@@ -76,14 +77,21 @@ function FormularioContacto({ demo }) {
     if (fieldErrors[key]) setFieldErrors((prev) => { const n = { ...prev }; delete n[key]; return n; });
   };
 
+  const ladaSeleccionada = values.pais === "Otro" ? values.ladaCustom.trim() : getLada(values.pais);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const errors = validateFields(values, {
       nombre: { required: true },
       empresa: { required: true },
-      email: { required: true, email: true }
+      email: { required: true, email: true },
+      pais: { required: true, message: "Selecciona tu país." },
+      whatsapp: { required: true, digitsMin: 6, digitsMax: 15, digitsMessage: "Número inválido. Solo dígitos, entre 6 y 15." }
     });
+    if (values.pais === "Otro" && !values.ladaCustom.replace(/\D/g, "")) {
+      errors.ladaCustom = "Ingresa la lada de tu país (ej. +49).";
+    }
     if (hasErrors(errors)) {
       setFieldErrors(errors);
       setStatus("error");
@@ -106,7 +114,7 @@ function FormularioContacto({ demo }) {
         fields: {
           nombre: values.nombre,
           empresa: values.empresa,
-          whatsapp: values.whatsapp,
+          whatsapp: buildWhatsappE164(ladaSeleccionada, values.whatsapp),
           email: values.email,
           pais: values.pais,
           modelo: values.modelo,
@@ -165,8 +173,8 @@ function FormularioContacto({ demo }) {
 
       <div className="contact-grid">
         <div className={`field${fieldErrors.nombre ? " has-error" : ""}`}>
-          <label htmlFor="c-nombre">{demo ? "Nombre y cargo" : "Nombre completo"} <span className="req">*</span></label>
-          <input id="c-nombre" name="nombre" value={values.nombre} onChange={update("nombre")} placeholder={demo ? "Nombre · Dirección / Operaciones" : "María González"} required autoComplete="name" aria-invalid={fieldErrors.nombre ? "true" : undefined} />
+          <label htmlFor="c-nombre">Nombre completo <span className="req">*</span></label>
+          <input id="c-nombre" name="nombre" value={values.nombre} onChange={update("nombre")} placeholder="María González" required autoComplete="name" aria-invalid={fieldErrors.nombre ? "true" : undefined} />
           {fieldErrors.nombre && <span className="field-error">{fieldErrors.nombre}</span>}
         </div>
         <div className={`field${fieldErrors.empresa ? " has-error" : ""}`}>
@@ -174,22 +182,56 @@ function FormularioContacto({ demo }) {
           <input id="c-empresa" name="empresa" value={values.empresa} onChange={update("empresa")} placeholder="Nombre de tu empresa" required autoComplete="organization" aria-invalid={fieldErrors.empresa ? "true" : undefined} />
           {fieldErrors.empresa && <span className="field-error">{fieldErrors.empresa}</span>}
         </div>
-        <div className="field">
-          <label htmlFor="c-whatsapp">WhatsApp</label>
-          <input id="c-whatsapp" name="whatsapp" type="tel" value={values.whatsapp} onChange={update("whatsapp")} placeholder="+52 33 1234 5678" autoComplete="tel" />
-          <span className="hint">Con código de país</span>
+        <div className={`field${fieldErrors.pais ? " has-error" : ""}`}>
+          <label htmlFor="c-pais">País <span className="req">*</span></label>
+          <select id="c-pais" name="pais" value={values.pais} onChange={update("pais")} required aria-invalid={fieldErrors.pais ? "true" : undefined}>
+            <option value="" disabled>Elige tu país</option>
+            {PAISES.map((p) => <option key={p.name} value={p.name}>{p.name}</option>)}
+          </select>
+          {fieldErrors.pais && <span className="field-error">{fieldErrors.pais}</span>}
+        </div>
+        <div className={`field${fieldErrors.whatsapp || fieldErrors.ladaCustom ? " has-error" : ""}`}>
+          <label htmlFor="c-whatsapp">WhatsApp <span className="req">*</span></label>
+          <div className="phone-input">
+            {values.pais === "Otro" ? (
+              <input
+                id="c-lada"
+                name="ladaCustom"
+                type="tel"
+                className="phone-input__lada phone-input__lada--editable"
+                value={values.ladaCustom}
+                onChange={update("ladaCustom")}
+                placeholder="+00"
+                aria-label="Lada del país"
+                aria-invalid={fieldErrors.ladaCustom ? "true" : undefined}
+              />
+            ) : (
+              <span className="phone-input__lada" aria-hidden="true">{ladaSeleccionada || "+--"}</span>
+            )}
+            <input
+              id="c-whatsapp"
+              name="whatsapp"
+              type="tel"
+              className="phone-input__number"
+              value={values.whatsapp}
+              onChange={update("whatsapp")}
+              placeholder={values.pais === "México" ? "33 1234 5678" : "Número local"}
+              required
+              autoComplete="tel-national"
+              aria-invalid={fieldErrors.whatsapp ? "true" : undefined}
+              disabled={!values.pais}
+            />
+          </div>
+          <span className="hint">
+            {!values.pais ? "Selecciona tu país primero" : "Solo el número local, sin lada"}
+          </span>
+          {fieldErrors.ladaCustom && <span className="field-error">{fieldErrors.ladaCustom}</span>}
+          {fieldErrors.whatsapp && <span className="field-error">{fieldErrors.whatsapp}</span>}
         </div>
         <div className={`field${fieldErrors.email ? " has-error" : ""}`}>
           <label htmlFor="c-email">Email {demo ? "corporativo" : ""} <span className="req">*</span></label>
           <input id="c-email" name="email" type="email" value={values.email} onChange={update("email")} placeholder="nombre@empresa.com" required autoComplete="email" aria-invalid={fieldErrors.email ? "true" : undefined} />
           {fieldErrors.email && <span className="field-error">{fieldErrors.email}</span>}
-        </div>
-        <div className="field">
-          <label htmlFor="c-pais">País</label>
-          <select id="c-pais" name="pais" value={values.pais} onChange={update("pais")}>
-            <option value="" disabled>Elige tu país</option>
-            {PAISES.map((p) => <option key={p} value={p}>{p}</option>)}
-          </select>
         </div>
         <div className="field">
           <label htmlFor="c-modelo">Modelo de negocio</label>

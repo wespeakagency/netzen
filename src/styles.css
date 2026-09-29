@@ -412,6 +412,30 @@ img { max-width: 100%; }
 .field .field-error { font-size: 12.5px; color: var(--nz-red-deep); font-weight: 600; }
 .field.has-error input, .field.has-error select, .field.has-error textarea { border-color: var(--nz-red); }
 
+.phone-input { display: flex; align-items: stretch; gap: 0; width: 100%; max-width: 100%; box-sizing: border-box; }
+.phone-input__lada {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 auto; width: 72px; box-sizing: border-box;
+  padding: 0 8px; height: 46px;
+  border: 1.5px solid var(--border-strong); border-right: none;
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+  background: var(--surface-subtle, #f6f6f6); color: var(--text-secondary);
+  font-family: var(--font-body); font-weight: 600; font-size: 15px;
+  white-space: nowrap;
+}
+.phone-input__lada--editable {
+  width: 84px;
+  background: var(--nz-white); color: var(--text-body);
+  cursor: text; text-align: center;
+}
+.phone-input__number {
+  flex: 1 1 0; min-width: 0; width: 100%;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0 !important;
+  box-sizing: border-box;
+}
+.phone-input__number:disabled { background: var(--surface-subtle, #f6f6f6); cursor: not-allowed; }
+.field.has-error .phone-input__lada { border-color: var(--nz-red); }
+
 .choice {
   display: flex; gap: 12px; align-items: flex-start; text-align: left;
   padding: 14px 16px; border: 1.5px solid var(--border-strong); border-radius: var(--radius-md);
