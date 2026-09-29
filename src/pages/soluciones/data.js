@@ -90,7 +90,7 @@ export const RECORRIDOS = {
       title: "Cuéntanos sobre tu operación actual",
       note: "Te mostramos cómo escalar sin frenar el negocio.",
       fields: [
-        { label: "Nombre y cargo", placeholder: "Nombre · Dirección / Operaciones", required: true },
+        { label: "Nombre", placeholder: "María González", required: true },
         { label: "Empresa", placeholder: "Razón social o marca", required: true },
         { label: "Correo corporativo", placeholder: "nombre@empresa.com", type: "email", required: true },
         { label: "¿Qué sistemas usas hoy y qué quieres escalar?", placeholder: "Migración, omnicanalidad, multipaís, analítica…", textarea: true }
@@ -141,7 +141,7 @@ export const RECORRIDOS = {
       title: "Cuéntanos sobre tu red",
       note: "Te preparamos una propuesta de formación a la medida del tamaño de tu fuerza comercial.",
       fields: [
-        { label: "Nombre y cargo", placeholder: "Nombre · Dirección comercial", required: true },
+        { label: "Nombre", placeholder: "María González", required: true },
         { label: "Empresa", placeholder: "Razón social o marca", required: true },
         { label: "Tamaño aproximado de la red", placeholder: "N.º de distribuidores" },
         { label: "¿Qué quieres lograr con tu red?", placeholder: "Formación, fidelización, método de venta…", textarea: true }
@@ -194,7 +194,7 @@ export const RECORRIDOS = {
       title: "Cuéntanos qué tienes hoy y dónde te frena",
       note: "Te proponemos por dónde empezar a modernizar, sin migrar todo.",
       fields: [
-        { label: "Nombre y cargo", placeholder: "Nombre · TI / Dirección", required: true },
+        { label: "Nombre", placeholder: "María González", required: true },
         { label: "Empresa", placeholder: "Razón social o marca", required: true },
         { label: "Correo corporativo", placeholder: "nombre@empresa.com", type: "email", required: true },
         { label: "¿Qué software propio usas y qué te gustaría modernizar?", placeholder: "Sistema actual, integraciones deseadas, procesos manuales…", textarea: true }
