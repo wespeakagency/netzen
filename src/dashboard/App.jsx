@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { fetchLeads } from "./api.js";
+import { fetchLeads, updateLead } from "./api.js";
 import { HAS_DASHBOARD_PASSWORD } from "../lib/env.js";
 import { Header } from "./components/Header.jsx";
 import { Counters } from "./components/Counters.jsx";
@@ -23,7 +23,6 @@ const CSV_COLUMNS = [
   "category",
   "score_priority",
   "full_name",
-  "job_title",
   "company_name",
   "work_email",
   "whatsapp",
@@ -43,8 +42,8 @@ export function App() {
   const [refreshing, setRefreshing] = useState(false);
   const [filters, setFilters] = useState(INITIAL_FILTERS);
 
-  const load = useCallback(async () => {
-    setRefreshing(true);
+  const load = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setRefreshing(true);
     try {
       const data = await fetchLeads();
       setLeads(data.leads || []);
@@ -53,15 +52,64 @@ export function App() {
       setError(null);
     } catch (err) {
       setError(String(err));
-      setStatus("error");
+      if (!silent) setStatus("error");
     } finally {
-      setRefreshing(false);
+      if (!silent) setRefreshing(false);
     }
   }, []);
 
   useEffect(() => {
     if (authed) load();
   }, [authed, load]);
+
+  useEffect(() => {
+    if (!authed) return;
+
+    let intervalId = null;
+
+    const start = () => {
+      if (intervalId != null) return;
+      intervalId = setInterval(() => load({ silent: true }), 60_000);
+    };
+
+    const stop = () => {
+      if (intervalId == null) return;
+      clearInterval(intervalId);
+      intervalId = null;
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        load({ silent: true });
+        start();
+      } else {
+        stop();
+      }
+    };
+
+    start();
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [authed, load]);
+
+  const handleUpdateLead = useCallback(async ({ leadId, field, value }) => {
+    let previousValue;
+    setLeads((prev) => prev.map((l) => {
+      if (l.lead_id !== leadId) return l;
+      previousValue = l[field];
+      return { ...l, [field]: value };
+    }));
+    try {
+      await updateLead({ leadId, field, value });
+    } catch (err) {
+      setLeads((prev) => prev.map((l) => (l.lead_id === leadId ? { ...l, [field]: previousValue } : l)));
+      throw err;
+    }
+  }, []);
 
   const handleLogout = () => {
     clearAuth();
@@ -141,6 +189,7 @@ export function App() {
               leads={filteredLeads}
               hasActiveFilters={!!hasActiveFilters}
               onClearFilters={clearFilters}
+              onUpdateLead={handleUpdateLead}
             />
           </>
         )}

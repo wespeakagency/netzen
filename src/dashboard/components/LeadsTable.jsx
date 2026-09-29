@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { AlertCircle, Zap, Timer, Clock, HelpCircle, Info, Mail, MessageCircle, Copy, Check } from "lucide-react";
+import { AlertCircle, Zap, Timer, Clock, HelpCircle, Info, Eye } from "lucide-react";
+import { LeadDrawer, STAGE_LABELS } from "./LeadDrawer.jsx";
 
 const COLUMNS = [
   { key: "category", label: "Categoría", type: "category", width: "110px" },
@@ -8,7 +9,6 @@ const COLUMNS = [
   { key: "company_name", label: "Empresa", type: "text" },
   { key: "route_code", label: "Ruta", type: "route", width: "60px" },
   { key: "lifecycle_stage", label: "Estado", type: "stage" },
-  { key: "job_title", label: "Cargo", type: "text" },
   { key: "work_email", label: "Email", type: "text" },
   { key: "whatsapp", label: "WhatsApp", type: "text" },
   { key: "country_code", label: "País", type: "country", width: "60px" },
@@ -25,10 +25,47 @@ const CATEGORY_ICONS = {
   NO_SCORABLE: Info,
 };
 
-export function LeadsTable({ leads, hasActiveFilters, onClearFilters }) {
+const COUNTRY_ISO = {
+  "méxico": "MX", "mexico": "MX",
+  "costa rica": "CR",
+  "nicaragua": "NI",
+  "colombia": "CO",
+  "perú": "PE", "peru": "PE",
+  "chile": "CL",
+  "argentina": "AR",
+  "brasil": "BR", "brazil": "BR",
+  "uruguay": "UY",
+  "paraguay": "PY",
+  "bolivia": "BO",
+  "ecuador": "EC",
+  "venezuela": "VE",
+  "guatemala": "GT",
+  "honduras": "HN",
+  "el salvador": "SV",
+  "panamá": "PA", "panama": "PA",
+  "república dominicana": "DO", "republica dominicana": "DO",
+  "cuba": "CU",
+  "puerto rico": "PR",
+  "estados unidos": "US", "eeuu": "US", "usa": "US",
+  "españa": "ES", "espana": "ES", "spain": "ES",
+  "canadá": "CA", "canada": "CA",
+};
+
+function toIsoCountry(value) {
+  if (!value) return "";
+  const raw = String(value).trim();
+  if (raw.length === 2) return raw.toUpperCase();
+  return COUNTRY_ISO[raw.toLowerCase()] || raw.slice(0, 2).toUpperCase();
+}
+
+export function LeadsTable({ leads, hasActiveFilters, onClearFilters, onUpdateLead }) {
   const [sortBy, setSortBy] = useState("score_priority");
   const [sortDir, setSortDir] = useState("desc");
-  const [copiedRow, setCopiedRow] = useState(null);
+  const [selectedLeadId, setSelectedLeadId] = useState(null);
+  const selectedLead = useMemo(
+    () => (selectedLeadId ? leads.find((l) => l.lead_id === selectedLeadId) || null : null),
+    [leads, selectedLeadId]
+  );
 
   const sorted = useMemo(() => {
     const copy = [...leads];
@@ -59,16 +96,6 @@ export function LeadsTable({ leads, hasActiveFilters, onClearFilters }) {
     }
   };
 
-  const handleCopyPhone = async (phone, leadId) => {
-    try {
-      await navigator.clipboard.writeText(phone);
-      setCopiedRow(leadId);
-      setTimeout(() => setCopiedRow(null), 1500);
-    } catch {
-      // ignorar
-    }
-  };
-
   if (!leads.length) {
     return (
       <div className="empty-state">
@@ -93,81 +120,84 @@ export function LeadsTable({ leads, hasActiveFilters, onClearFilters }) {
   }
 
   return (
-    <div className="table-wrapper">
-      <table className="leads-table">
-        <thead>
-          <tr>
-            {COLUMNS.map((col) => (
-              <th
-                key={col.key}
-                onClick={() => handleSort(col.key)}
-                className={sortBy === col.key ? "sorted" : ""}
-                style={col.width ? { width: col.width } : undefined}
-              >
-                {col.label}
-                {sortBy === col.key && (
-                  <span className="sort-arrow">{sortDir === "asc" ? "↑" : "↓"}</span>
-                )}
-              </th>
-            ))}
-            <th className="col-actions" style={{ width: "120px" }}>
-              Acciones
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((lead, idx) => {
-            const cat = lead.category || "PENDIENTE";
-            const rowId = lead.lead_id || `row-${idx}`;
-            return (
-              <tr key={rowId} data-category={cat}>
-                {COLUMNS.map((col) => (
-                  <td key={col.key} className={`cell-${col.type}`}>
-                    {renderCell(lead[col.key], col.type)}
-                  </td>
-                ))}
-                <td className="cell-actions">
-                  {lead.work_email && (
-                    <a
-                      href={`mailto:${lead.work_email}`}
-                      className="row-action"
-                      title={`Enviar email a ${lead.work_email}`}
-                    >
-                      <Mail size={14} />
-                    </a>
+    <>
+      <div className="table-wrapper">
+        <table className="leads-table">
+          <thead>
+            <tr>
+              <th className="col-context">Contexto</th>
+              {COLUMNS.map((col) => (
+                <th
+                  key={col.key}
+                  onClick={() => handleSort(col.key)}
+                  className={sortBy === col.key ? "sorted" : ""}
+                  style={col.width ? { width: col.width } : undefined}
+                >
+                  {col.label}
+                  {sortBy === col.key && (
+                    <span className="sort-arrow">{sortDir === "asc" ? "↑" : "↓"}</span>
                   )}
-                  {lead.whatsapp && (
-                    <a
-                      href={`https://wa.me/${cleanPhone(lead.whatsapp)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="row-action"
-                      title={`WhatsApp a ${lead.whatsapp}`}
-                    >
-                      <MessageCircle size={14} />
-                    </a>
-                  )}
-                  {lead.whatsapp && (
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((lead, idx) => {
+              const cat = lead.category || "PENDIENTE";
+              const rowId = lead.lead_id || `row-${idx}`;
+              const openDrawer = () => setSelectedLeadId(lead.lead_id || null);
+              return (
+                <tr
+                  key={rowId}
+                  data-category={cat}
+                  className="lead-row"
+                  onClick={openDrawer}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      openDrawer();
+                    }
+                  }}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Ver detalle de ${lead.full_name || lead.work_email || "lead"}`}
+                >
+                  <td className="cell-context">
                     <button
-                      className="row-action"
-                      onClick={() => handleCopyPhone(String(lead.whatsapp), rowId)}
-                      title="Copiar teléfono"
+                      type="button"
+                      className="row-context-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openDrawer();
+                      }}
+                      title="Ver contexto completo"
                     >
-                      {copiedRow === rowId ? <Check size={14} /> : <Copy size={14} />}
+                      <Eye size={13} />
+                      Ver
                     </button>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+                  </td>
+                  {COLUMNS.map((col) => {
+                    const rawValue = lead[col.key];
+                    const tooltip = getCellTooltip(rawValue, col.type);
+                    return (
+                      <td
+                        key={col.key}
+                        className={`cell-${col.type}`}
+                        title={tooltip || undefined}
+                      >
+                        {renderCell(rawValue, col.type)}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <LeadDrawer lead={selectedLead} onClose={() => setSelectedLeadId(null)} onUpdateLead={onUpdateLead} />
+    </>
   );
-}
-
-function cleanPhone(phone) {
-  return String(phone).replace(/[^\d+]/g, "");
 }
 
 function renderCell(value, type) {
@@ -205,12 +235,20 @@ function renderCell(value, type) {
   }
 
   if (type === "stage") {
-    return <span className="stage-tag">{String(value).replace(/_/g, " ")}</span>;
+    const label = STAGE_LABELS[value] || String(value).replace(/_/g, " ");
+    return <span className="stage-tag">{label}</span>;
   }
 
   if (type === "country") {
-    return <span className="country-code">{value}</span>;
+    return <span className="country-code">{toIsoCountry(value)}</span>;
   }
 
   return String(value);
+}
+
+function getCellTooltip(value, type) {
+  if (value == null || value === "") return "";
+  if (type === "text") return String(value);
+  if (type === "country") return String(value);
+  return "";
 }
