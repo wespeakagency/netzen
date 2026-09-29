@@ -16,7 +16,13 @@ function doGet(e) {
       return jsonResponseGet_(getCatalogs_());
     }
 
-    return jsonResponseGet_({ error: 'unknown_action', supported: ['leads', 'metrics', 'catalogs'] });
+    // Tracking de clicks desde los botones del correo de notificacion.
+    // Devuelve HTML (redirect al destino real + estado "contactado" idempotente).
+    if (action === 'trackContact') {
+      return handleTrackContact_(e);
+    }
+
+    return jsonResponseGet_({ error: 'unknown_action', supported: ['leads', 'metrics', 'catalogs', 'trackContact'] });
   } catch (err) {
     return jsonResponseGet_({ error: 'internal_error', message: String(err) });
   }

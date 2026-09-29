@@ -530,8 +530,10 @@ function sendLeadNotification_(leadId, formType, fields, scoring, meta) {
   template.recursos = fields.implementation_readiness || "-";
   template.tipoFormulario = traducirTipoFormulario_(formType);
   template.fecha = new Date().toLocaleString("es-MX", { timeZone: "America/Mexico_City" });
-  template.whatsappLink = armarLinkWhatsApp_(fields.whatsapp, fields.nombre);
-  template.emailLink = armarLinkEmail_(fields.email, fields.nombre);
+  // Links trackeados: pasan por doGet(action=trackContact), avanzan lifecycle_stage a "contactado" (idempotente)
+  // y redirigen al destino real (WhatsApp / mailto). Si TRACKING_SECRET no esta seteado, cae al link directo.
+  template.whatsappLink = buildTrackingUrl_(leadId, "whatsapp") || armarLinkWhatsApp_(fields.whatsapp, fields.nombre);
+  template.emailLink = buildTrackingUrl_(leadId, "email") || armarLinkEmail_(fields.email, fields.nombre);
 
   try {
     template.sheetUrl = SpreadsheetApp.getActiveSpreadsheet().getUrl();
@@ -629,4 +631,130 @@ function handleUpdateLead_(payload) {
     }
   }
   return jsonResponse({ ok: false, error: "lead_id no encontrado" });
+}
+
+// ============================================================
+// TRACK CONTACT — click de boton WhatsApp/Email desde el correo de notificacion
+// Endpoint GET publico (?action=trackContact). HMAC(lead_id|channel) para evitar
+// que un tercero dispare mutaciones. Avanza lifecycle_stage "nuevo" -> "contactado"
+// de forma idempotente y redirige al destino real via HTML (Apps Script no soporta 302).
+// ============================================================
+
+function getTrackingSecret_() {
+  return PropertiesService.getScriptProperties().getProperty("TRACKING_SECRET") || "";
+}
+
+function signTrack_(leadId, channel) {
+  var secret = getTrackingSecret_();
+  if (!secret) return "";
+  var raw = Utilities.computeHmacSha256Signature(leadId + "|" + channel, secret);
+  // base16 truncado a 16 chars: suficiente contra fuerza bruta (2^64) y queda un URL corto.
+  return raw.map(function (b) {
+    var v = (b < 0 ? b + 256 : b).toString(16);
+    return v.length === 1 ? "0" + v : v;
+  }).join("").slice(0, 16);
+}
+
+function buildTrackingUrl_(leadId, channel) {
+  var token = signTrack_(leadId, channel);
+  if (!token) return ""; // Sin secret configurado -> caller usa link directo
+  var base;
+  try { base = ScriptApp.getService().getUrl(); }
+  catch (e) { return ""; }
+  if (!base) return "";
+  return base + "?action=trackContact&lead_id=" + encodeURIComponent(leadId) + "&channel=" + channel + "&t=" + token;
+}
+
+function handleTrackContact_(e) {
+  var leadId = String((e.parameter && e.parameter.lead_id) || "").trim();
+  var channel = String((e.parameter && e.parameter.channel) || "").trim();
+  var token = String((e.parameter && e.parameter.t) || "").trim();
+
+  if (!leadId || (channel !== "whatsapp" && channel !== "email") || !token) {
+    return htmlTrackError_("Link invalido.");
+  }
+  var expected = signTrack_(leadId, channel);
+  if (!expected) return htmlTrackError_("El servidor no tiene TRACKING_SECRET configurado.");
+  if (token !== expected) return htmlTrackError_("Link invalido o adulterado.");
+
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  if (!sheet) return htmlTrackError_("Hoja de leads no encontrada.");
+
+  var values = sheet.getDataRange().getValues();
+  if (values.length <= 1) return htmlTrackError_("No hay leads registrados.");
+
+  var headers = values[0];
+  var idColIdx = headers.indexOf("lead_id");
+  var stageColIdx = headers.indexOf("lifecycle_stage");
+  var whatsappColIdx = headers.indexOf("whatsapp");
+  var emailColIdx = headers.indexOf("work_email");
+  var nombreColIdx = headers.indexOf("full_name");
+  var touchColIdx = headers.indexOf("last_touch_at");
+  if (idColIdx === -1 || stageColIdx === -1) return htmlTrackError_("Columnas requeridas no encontradas.");
+
+  var destination = "";
+  var found = false;
+  for (var i = 1; i < values.length; i++) {
+    if (String(values[i][idColIdx]) === leadId) {
+      found = true;
+      var currentStage = String(values[i][stageColIdx] || "").trim();
+      // Idempotente: solo avanza desde "nuevo" o vacio. No pisa estados posteriores.
+      if (currentStage === "" || currentStage === "nuevo") {
+        sheet.getRange(i + 1, stageColIdx + 1).setValue("contactado");
+        if (touchColIdx !== -1) sheet.getRange(i + 1, touchColIdx + 1).setValue(new Date());
+      }
+      var whatsapp = whatsappColIdx !== -1 ? String(values[i][whatsappColIdx] || "") : "";
+      var email = emailColIdx !== -1 ? String(values[i][emailColIdx] || "") : "";
+      var nombre = nombreColIdx !== -1 ? String(values[i][nombreColIdx] || "") : "";
+      destination = channel === "whatsapp"
+        ? armarLinkWhatsApp_(whatsapp, nombre)
+        : armarLinkEmail_(email, nombre);
+      break;
+    }
+  }
+
+  if (!found) return htmlTrackError_("Lead no encontrado.");
+  if (!destination) return htmlTrackError_("No hay " + (channel === "whatsapp" ? "WhatsApp" : "email") + " registrado para este lead.");
+
+  return htmlTrackRedirect_(destination, channel);
+}
+
+function htmlTrackRedirect_(destination, channel) {
+  var label = channel === "whatsapp" ? "WhatsApp" : "tu cliente de correo";
+  var safeDest = String(destination).replace(/"/g, "&quot;");
+  var html = ''
+    + '<!doctype html><html lang="es"><head><meta charset="utf-8">'
+    + '<meta name="viewport" content="width=device-width,initial-scale=1">'
+    + '<title>Abriendo ' + label + '...</title>'
+    + '<style>body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#f6f6f6;color:#0b1220;'
+    + 'margin:0;padding:40px 20px;text-align:center}.card{max-width:420px;margin:60px auto;background:#fff;'
+    + 'padding:32px 24px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.08)}h1{font-size:20px;margin:0 0 12px;color:#AA0000}'
+    + 'p{margin:12px 0;line-height:1.5}a.btn{display:inline-block;margin-top:16px;padding:12px 24px;'
+    + 'background:#AA0000;color:#fff;text-decoration:none;border-radius:8px;font-weight:600}</style></head><body>'
+    + '<div class="card"><h1>Abriendo ' + label + '...</h1>'
+    + '<p>Si no abre en unos segundos, hace click en el boton:</p>'
+    + '<a class="btn" href="' + safeDest + '">Continuar</a>'
+    + '<p style="font-size:12px;color:#6b7280;margin-top:24px">Estado del lead actualizado a <strong>contactado</strong>.</p>'
+    + '</div>'
+    + '<script>window.location.replace(' + JSON.stringify(destination) + ');</script>'
+    + '</body></html>';
+  return HtmlService.createHtmlOutput(html)
+    .setTitle("Abriendo " + label + "...")
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function htmlTrackError_(msg) {
+  var safeMsg = escapeHtml_(msg);
+  var html = ''
+    + '<!doctype html><html lang="es"><head><meta charset="utf-8">'
+    + '<meta name="viewport" content="width=device-width,initial-scale=1">'
+    + '<title>Netzen - Link no valido</title>'
+    + '<style>body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#f6f6f6;color:#0b1220;'
+    + 'margin:0;padding:40px 20px;text-align:center}.card{max-width:420px;margin:60px auto;background:#fff;'
+    + 'padding:32px 24px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.08)}h1{font-size:20px;margin:0 0 12px;color:#AA0000}'
+    + 'p{margin:12px 0;line-height:1.5;color:#374151}</style></head><body>'
+    + '<div class="card"><h1>No pudimos abrir el contacto</h1>'
+    + '<p>' + safeMsg + '</p><p style="font-size:12px;color:#6b7280">Podes volver al correo y usar el email o WhatsApp del prospecto directamente.</p>'
+    + '</div></body></html>';
+  return HtmlService.createHtmlOutput(html).setTitle("Netzen - Error");
 }

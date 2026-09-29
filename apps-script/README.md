@@ -51,6 +51,32 @@ Código versionado del proyecto de Apps Script bound al Google Sheet del CRM.
      - Newsletter → NO_SCORABLE (intent 20, resto vacío).
      - Ruta E → PENDIENTE con flag `route_E_requires_expansion_scoring`.
 
+## Tracking de clicks desde el correo de notificación
+
+Los botones **Responder por WhatsApp** y **Responder por Email** del correo pasan primero por un endpoint de tracking (`doGet` con `action=trackContact`), que avanza `lifecycle_stage` de `nuevo` a `contactado` de forma idempotente y redirige al destino real vía HTML (Apps Script no permite HTTP 302).
+
+**Setup (una sola vez):**
+
+1. En Apps Script → Project Settings → Script Properties → agregar:
+   - Key: `TRACKING_SECRET`
+   - Value: cualquier string aleatorio de 32+ chars (ej. correr `openssl rand -hex 32` en terminal).
+
+2. Deploy → Manage deployments → New version. La URL no cambia.
+
+**Cómo funciona:**
+
+- `buildTrackingUrl_(leadId, channel)` firma `<lead_id>|<channel>` con HMAC-SHA256 truncado a 16 chars hex y arma la URL:
+  ```
+  <WEB_APP_URL>?action=trackContact&lead_id=<id>&channel=whatsapp|email&t=<hmac>
+  ```
+- `handleTrackContact_` valida el HMAC, busca el lead en `01_LEADS`, y solo avanza el stage si está en `nuevo` o vacío (nunca retrocede desde `calificado`, `propuesta`, etc.). Actualiza `last_touch_at`.
+- Devuelve una página HTML minimal que:
+  - Ejecuta `window.location.replace(destino)` — para WhatsApp abre directo, para `mailto:` dispara el cliente de correo del sistema.
+  - Muestra un botón fallback "Continuar" por si el redirect automático no dispara (típico en algunos clientes con `mailto:`).
+- Si `TRACKING_SECRET` no está seteado, `buildTrackingUrl_` retorna vacío y `sendLeadNotification_` cae al link directo sin tracking (nunca rompe el correo).
+
+**Seguridad:** el HMAC evita que un bot que scrapee la URL o alguien que reciba el correo forwardeado pueda disparar mutaciones arbitrarias. Cada URL sirve solo para su `lead_id + channel` específico.
+
 ## Cómo cambiar pesos sin código (para Marketing)
 
 1. Abrir la pestaña `04_SCORE_WEIGHTS` en el Sheet.
