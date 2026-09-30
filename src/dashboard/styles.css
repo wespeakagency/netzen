@@ -372,13 +372,57 @@ body {
   color: var(--nz-text-muted);
 }
 
+.counter-value-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
 .counter-value {
   font-family: "Montserrat", sans-serif;
-  font-size: 26px;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--nz-text);
+}
+
+.counter-value--ok {
+  color: var(--nz-success) !important;
+}
+
+.counter-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 11px;
   font-weight: 700;
   line-height: 1;
-  color: var(--nz-text);
-  margin-bottom: 8px;
+  white-space: nowrap;
+  cursor: help;
+}
+
+.counter-delta--up {
+  color: #15803d;
+  background: #dcfce7;
+  border: 1px solid #bbf7d0;
+}
+
+.counter-delta--down {
+  color: #b91c1c;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+}
+
+.counter-delta--flat {
+  color: #6b7280;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
 }
 
 .counter-progress {

@@ -149,9 +149,9 @@ export function PasswordGate({ onSuccess }) {
             </button>
           </form>
 
-          <p className="gate-hint">
+          {/* <p className="gate-hint">
             ¿Problemas para entrar? Contacta al admin del equipo.
-          </p>
+          </p> */}
         </div>
       </main>
     </div>
