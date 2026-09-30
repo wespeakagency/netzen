@@ -274,30 +274,17 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onEditL
             </div>
 
             {lead.score_priority != null && lead.score_priority !== "" && (
-              <div
-                className="lead-drawer-score-medallion"
-                ref={scoringPopoverRef}
-                onMouseEnter={openScoringPopover}
-                onMouseLeave={scheduleCloseScoringPopover}
-                onFocus={openScoringPopover}
-                onBlur={scheduleCloseScoringPopover}
-              >
+              <div className="lead-drawer-score-medallion">
                 <button
                   type="button"
                   className={`lead-drawer-score-medallion-btn lead-drawer-score-medallion-btn--${scoreTier}`}
-                  aria-expanded={scoringPopoverOpen}
-                  aria-haspopup="dialog"
-                  aria-label={`Score ${lead.score_priority} sobre 100. Ver desglose.`}
+                  onClick={openScoringDetail}
+                  aria-label={`Score ${lead.score_priority} sobre 100. Ver desglose completo.`}
+                  title="Ver desglose del score"
                 >
                   <span className="lead-drawer-score-medallion-label">Score</span>
                   <span className="lead-drawer-score-medallion-num">{lead.score_priority}</span>
                 </button>
-                {scoringPopoverOpen && (
-                  <ScoringPeekPopover
-                    lead={lead}
-                    onSeeMore={openScoringDetail}
-                  />
-                )}
               </div>
             )}
           </div>
@@ -448,7 +435,7 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onEditL
                 </div>
               )}
               {(SITUACION_LABELS[lead.situacion] || lead.situacion) && (
-                <div className="lead-drawer-datacard lead-drawer-datacard--wide">
+                <div className="lead-drawer-datacard">
                   <span className="lead-drawer-datacard-label">Situación</span>
                   <span className="lead-drawer-datacard-value">
                     {SITUACION_LABELS[lead.situacion] || lead.situacion}
@@ -1097,17 +1084,16 @@ function scoreClass(score) {
   return "cold";
 }
 
-// Etapas del pipeline lineal (nurture queda fuera, se muestra como side track).
+// Etapas abiertas del pipeline lineal. Cerrado se maneja aparte como outcome.
 const PIPELINE_STAGES = [
   { key: "nuevo", label: "Nuevo" },
   { key: "contactado", label: "Contactado" },
   { key: "calificado", label: "Calificado" },
   { key: "propuesta", label: "Propuesta" },
-  { key: "closed", label: "Cerrado" },
 ];
 
 function pipelineIndex(stage) {
-  if (stage === "cerrado_ganado" || stage === "cerrado_perdido") return 4;
+  if (stage === "cerrado_ganado" || stage === "cerrado_perdido") return PIPELINE_STAGES.length;
   const found = PIPELINE_STAGES.findIndex((s) => s.key === stage);
   return found === -1 ? -1 : found;
 }
@@ -1125,6 +1111,7 @@ function PipelineStepper({ current, onSelect, disabled }) {
   }
 
   const currentIdx = pipelineIndex(current);
+  const isClosed = current === "cerrado_ganado" || current === "cerrado_perdido";
   const outcome = current === "cerrado_ganado" ? "ganado"
     : current === "cerrado_perdido" ? "perdido"
     : null;
@@ -1135,71 +1122,66 @@ function PipelineStepper({ current, onSelect, disabled }) {
   };
 
   return (
-    <div className="pipeline-stepper" role="list" aria-label="Progreso en el pipeline">
-      {PIPELINE_STAGES.map((stage, idx) => {
-        const isPast = idx < currentIdx;
-        const isCurrent = idx === currentIdx;
-        const state = isPast ? "past" : isCurrent ? "current" : "future";
+    <div className="pipeline-stepper-wrap">
+      <div className="pipeline-stepper" role="list" aria-label="Progreso en el pipeline">
+        {PIPELINE_STAGES.map((stage, idx) => {
+          const isPast = idx < currentIdx;
+          const isCurrent = idx === currentIdx;
+          const state = isPast ? "past" : isCurrent ? "current" : "future";
 
-        if (stage.key === "closed") {
-          const wonActive = outcome === "ganado";
-          const lostActive = outcome === "perdido";
-          const wonState = wonActive ? "current" : isPast ? "past" : "future";
-          const lostState = lostActive ? "current" : isPast ? "past" : "future";
           return (
-            <div key="closed-split" className="pipeline-step-split" role="listitem">
+            <React.Fragment key={stage.key}>
               <button
                 type="button"
-                className={`pipeline-step pipeline-step--${wonState} pipeline-step--half pipeline-step--ganado`}
-                onClick={() => handleClick("cerrado_ganado")}
-                disabled={disabled || wonActive}
-                aria-current={wonActive ? "step" : undefined}
-                data-current-stage={wonActive ? "cerrado_ganado" : undefined}
-                title="Marcar como Cerrado, ganado"
+                className={`pipeline-step pipeline-step--${state}`}
+                onClick={() => handleClick(stage.key)}
+                disabled={disabled || isCurrent}
+                role="listitem"
+                aria-current={isCurrent ? "step" : undefined}
+                data-current-stage={isCurrent ? current : undefined}
+                title={isCurrent ? stage.label : `Mover a ${stage.label}`}
               >
                 <span className="pipeline-step-dot" />
-                <span className="pipeline-step-label">Ganado</span>
+                <span className="pipeline-step-label">{stage.label}</span>
               </button>
-              <button
-                type="button"
-                className={`pipeline-step pipeline-step--${lostState} pipeline-step--half pipeline-step--perdido`}
-                onClick={() => handleClick("cerrado_perdido")}
-                disabled={disabled || lostActive}
-                aria-current={lostActive ? "step" : undefined}
-                data-current-stage={lostActive ? "cerrado_perdido" : undefined}
-                title="Marcar como Cerrado, perdido"
-              >
-                <span className="pipeline-step-dot" />
-                <span className="pipeline-step-label">Perdido</span>
-              </button>
-            </div>
+              {idx < PIPELINE_STAGES.length - 1 && (
+                <span
+                  className={`pipeline-connector ${idx < currentIdx ? "pipeline-connector--past" : ""}`}
+                  aria-hidden="true"
+                />
+              )}
+            </React.Fragment>
           );
-        }
+        })}
+      </div>
 
-        return (
-          <React.Fragment key={stage.key}>
-            <button
-              type="button"
-              className={`pipeline-step pipeline-step--${state}`}
-              onClick={() => handleClick(stage.key)}
-              disabled={disabled || isCurrent}
-              role="listitem"
-              aria-current={isCurrent ? "step" : undefined}
-              data-current-stage={isCurrent ? current : undefined}
-              title={isCurrent ? stage.label : `Mover a ${stage.label}`}
-            >
-              <span className="pipeline-step-dot" />
-              <span className="pipeline-step-label">{stage.label}</span>
-            </button>
-            {idx < PIPELINE_STAGES.length - 1 && (
-              <span
-                className={`pipeline-connector ${idx < currentIdx ? "pipeline-connector--past" : ""}`}
-                aria-hidden="true"
-              />
-            )}
-          </React.Fragment>
-        );
-      })}
+      <div className={`pipeline-outcome ${isClosed ? "pipeline-outcome--closed" : ""}`}>
+        <span className="pipeline-outcome-label">
+          {isClosed ? "Cerrado como" : "Cerrar como"}
+        </span>
+        <div className="pipeline-outcome-choices" role="group" aria-label="Outcome de cierre">
+          <button
+            type="button"
+            className={`pipeline-outcome-btn pipeline-outcome-btn--ganado ${outcome === "ganado" ? "is-active" : ""}`}
+            onClick={() => handleClick("cerrado_ganado")}
+            disabled={disabled || outcome === "ganado"}
+            aria-pressed={outcome === "ganado"}
+          >
+            <span className="pipeline-outcome-dot" aria-hidden="true" />
+            <span>Ganado</span>
+          </button>
+          <button
+            type="button"
+            className={`pipeline-outcome-btn pipeline-outcome-btn--perdido ${outcome === "perdido" ? "is-active" : ""}`}
+            onClick={() => handleClick("cerrado_perdido")}
+            disabled={disabled || outcome === "perdido"}
+            aria-pressed={outcome === "perdido"}
+          >
+            <span className="pipeline-outcome-dot" aria-hidden="true" />
+            <span>Perdido</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
