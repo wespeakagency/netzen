@@ -2,11 +2,11 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   X, Mail, MessageCircle, ChevronDown, ChevronRight, Copy, Check, Edit3, Activity,
   Users, Wallet, CalendarClock, Wrench, BarChart3, Sparkles, HelpCircle,
-  Archive, ArchiveRestore, Save, ShieldAlert,
+  Archive, ArchiveRestore, Save, ShieldAlert, ArrowRight, ExternalLink,
 } from "lucide-react";
 import { fetchTouchEvents } from "../api.js";
 import { BUSINESS_MODELS } from "../../lib/leadCatalogs.js";
-import { PAISES } from "../../lib/paisesLadas.js";
+import { PAISES, detectCountryFromPhone, replaceLadaInPhone, getLada } from "../../lib/paisesLadas.js";
 import {
   computeScoringBreakdown,
   buildScoringNarrative,
@@ -117,25 +117,24 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onEditL
     }, 0);
   };
 
-  const handleStageChange = async (e) => {
-    const newStage = e.target.value;
+  const changeStage = async (newStage) => {
     if (!lead || !onUpdateLead || newStage === lead.lifecycle_stage) return;
     setStageStatus("saving");
     setStageError("");
     try {
       await onUpdateLead({ leadId: lead.lead_id, field: "lifecycle_stage", value: newStage });
       setStageStatus("idle");
-      // Refetch touch events para reflejar el cambio manual en el timeline sin esperar refresh general.
       if (lead.lead_id) {
         fetchTouchEvents(lead.lead_id, { force: true })
           .then((data) => setTouchEvents(Array.isArray(data?.events) ? data.events : []))
-          .catch(() => { /* silencioso, el cambio de estado ya fue exitoso */ });
+          .catch(() => {});
       }
     } catch (err) {
       setStageStatus("error");
       setStageError(err.message || "No se pudo guardar");
     }
   };
+  const handleStageChange = (e) => changeStage(e.target.value);
 
   const handleCopyPhone = async () => {
     if (!lead?.whatsapp) return;
@@ -247,35 +246,36 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onEditL
         onClick={(e) => e.stopPropagation()}
       >
         <header className="lead-drawer-header">
+          <div className="lead-drawer-header-glow" aria-hidden="true" />
+          <button
+            ref={closeBtnRef}
+            className="lead-drawer-close"
+            onClick={onClose}
+            aria-label="Cerrar detalle del lead"
+          >
+            <X size={18} />
+          </button>
+
           <div className="lead-drawer-header-top">
             <div className="lead-drawer-title-block">
-              <h2 id="lead-drawer-title">{title}</h2>
-              {subtitle && <p className="lead-drawer-subtitle">{subtitle}</p>}
-              {(lead.job_title || lead.country_code) && (
-                <p className="lead-drawer-identity">
-                  {[lead.job_title, lead.country_code].filter(Boolean).join(" · ")}
+              <p className="lead-drawer-kicker">
+                <span>Lead</span>
+                {lead.category && <span className="lead-drawer-kicker-dot" aria-hidden="true" />}
+                {lead.category && <span className={`lead-drawer-kicker-cat lead-drawer-kicker-cat--${String(lead.category).toLowerCase()}`}>{lead.category}</span>}
+              </p>
+              <h2 id="lead-drawer-title" className="lead-drawer-title">
+                {title}<span className="lead-drawer-title-dot" aria-hidden="true">.</span>
+              </h2>
+              {(subtitle || lead.business_model || lead.job_title || lead.country_code) && (
+                <p className="lead-drawer-subtitle">
+                  {[subtitle, lead.job_title, lead.business_model, lead.country_code].filter(Boolean).join(" · ")}
                 </p>
               )}
             </div>
-            <button
-              ref={closeBtnRef}
-              className="lead-drawer-close"
-              onClick={onClose}
-              aria-label="Cerrar detalle del lead"
-            >
-              <X size={18} />
-            </button>
-          </div>
 
-          <div className="lead-drawer-meta-row">
-            {lead.category && (
-              <span className={`badge badge-${String(lead.category).toLowerCase()}`}>
-                {lead.category}
-              </span>
-            )}
             {lead.score_priority != null && lead.score_priority !== "" && (
               <div
-                className="lead-drawer-scoring-peek"
+                className="lead-drawer-score-medallion"
                 ref={scoringPopoverRef}
                 onMouseEnter={openScoringPopover}
                 onMouseLeave={scheduleCloseScoringPopover}
@@ -284,12 +284,14 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onEditL
               >
                 <button
                   type="button"
-                  className={`lead-drawer-scoring-priority lead-drawer-scoring-priority--sm lead-drawer-scoring-priority--${scoreTier}`}
+                  className={`lead-drawer-score-medallion-btn lead-drawer-score-medallion-btn--${scoreTier}`}
                   aria-expanded={scoringPopoverOpen}
                   aria-haspopup="dialog"
-                  aria-label={`Score de prioridad ${lead.score_priority}. Pasar el mouse para ver desglose.`}
+                  aria-label={`Score ${lead.score_priority} sobre 100. Ver desglose.`}
                 >
-                  <span className="lead-drawer-scoring-priority-num">{lead.score_priority}</span>
+                  <span className="lead-drawer-score-medallion-label">Score</span>
+                  <span className="lead-drawer-score-medallion-num">{lead.score_priority}</span>
+                  <span className="lead-drawer-score-medallion-unit">/100</span>
                 </button>
                 {scoringPopoverOpen && (
                   <ScoringPeekPopover
@@ -299,6 +301,9 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onEditL
                 )}
               </div>
             )}
+          </div>
+
+          <div className="lead-drawer-meta-row">
             {lead.lifecycle_stage && (
               <button
                 type="button"
@@ -348,7 +353,7 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onEditL
                   rel="noopener noreferrer"
                   className="lead-drawer-action lead-drawer-action--whatsapp"
                 >
-                  <MessageCircle size={16} />
+                  <span className="lead-drawer-action-icon" aria-hidden="true"><MessageCircle size={16} /></span>
                   <span className="lead-drawer-action-label">
                     <span>Abrir WhatsApp</span>
                     <span className="lead-drawer-action-sub">{lead.whatsapp}</span>
@@ -360,7 +365,7 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onEditL
                   href={`mailto:${lead.work_email}`}
                   className="lead-drawer-action lead-drawer-action--email"
                 >
-                  <Mail size={16} />
+                  <span className="lead-drawer-action-icon" aria-hidden="true"><Mail size={16} /></span>
                   <span className="lead-drawer-action-label">
                     <span>Enviar email</span>
                     <span className="lead-drawer-action-sub">{lead.work_email}</span>
@@ -374,7 +379,7 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onEditL
                   className="lead-drawer-action lead-drawer-action--ghost"
                   title="Copiar teléfono"
                 >
-                  {phoneCopied ? <Check size={16} /> : <Copy size={16} />}
+                  <span className="lead-drawer-action-icon" aria-hidden="true">{phoneCopied ? <Check size={16} /> : <Copy size={16} />}</span>
                   <span className="lead-drawer-action-label">
                     <span>{phoneCopied ? "Copiado" : "Copiar teléfono"}</span>
                   </span>
@@ -386,7 +391,7 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onEditL
           {onUpdateLead && (
             <div className="lead-drawer-stage-edit-block" id="stage-edit-anchor">
               <div className="lead-drawer-stage-edit-head">
-                <span className="lead-drawer-stage-edit-label">Estado del lead</span>
+                <h3 className="lead-drawer-section-title">Estado del lead</h3>
                 {stageStatus === "saving" && (
                   <span className="lead-drawer-stage-hint">Guardando…</span>
                 )}
@@ -396,18 +401,25 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onEditL
                   </span>
                 )}
               </div>
-              <select
-                className={`lead-drawer-stage-select lead-drawer-stage-select--wide lead-drawer-stage-select--${lead.lifecycle_stage || "nuevo"}`}
-                value={lead.lifecycle_stage || "nuevo"}
-                onChange={handleStageChange}
+              <PipelineStepper
+                current={lead.lifecycle_stage || "nuevo"}
+                onSelect={changeStage}
                 disabled={stageStatus === "saving"}
-                aria-label="Cambiar estado del lead"
-              >
-                {SELECTABLE_STAGES.map((k) => (
-                  <option key={k} value={k}>{STAGE_LABELS[k]}</option>
-                ))}
-              </select>
-              <PipelineStepper current={lead.lifecycle_stage || "nuevo"} />
+              />
+              <details className="lead-drawer-stage-manual">
+                <summary>Cambiar manualmente</summary>
+                <select
+                  className={`lead-drawer-stage-select lead-drawer-stage-select--wide lead-drawer-stage-select--${lead.lifecycle_stage || "nuevo"}`}
+                  value={lead.lifecycle_stage || "nuevo"}
+                  onChange={handleStageChange}
+                  disabled={stageStatus === "saving"}
+                  aria-label="Cambiar estado del lead"
+                >
+                  {SELECTABLE_STAGES.map((k) => (
+                    <option key={k} value={k}>{STAGE_LABELS[k]}</option>
+                  ))}
+                </select>
+              </details>
             </div>
           )}
 
@@ -438,66 +450,89 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onEditL
             />
           </div>
 
-          <Section title="Metadata">
-            <Field label="Creado" value={formatDate(lead.created_at)} />
-          </Section>
+          <div className="lead-drawer-meta-zone">
+            <p className="lead-drawer-meta-zone-eyebrow">Antecedentes y registro</p>
 
-          <section className="lead-drawer-section">
-            <button
-              type="button"
-              className="lead-drawer-collapsible"
-              onClick={() => setShowTimeline((v) => !v)}
-              aria-expanded={showTimeline}
-            >
-              {showTimeline ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-              <span>Historial de actividad</span>
-            </button>
-            {showTimeline && (
-              <div className="lead-drawer-section-body">
-                <TouchTimeline
-                  events={touchEvents}
-                  status={touchStatus}
-                />
-              </div>
-            )}
-          </section>
+            <Section title="Metadata">
+              <Field label="Creado" value={formatDate(lead.created_at)} />
+            </Section>
 
-          {hasAttribution(lead) && (
             <section className="lead-drawer-section">
               <button
                 type="button"
                 className="lead-drawer-collapsible"
-                onClick={() => setShowAttribution((v) => !v)}
-                aria-expanded={showAttribution}
+                onClick={() => setShowTimeline((v) => !v)}
+                aria-expanded={showTimeline}
               >
-                {showAttribution ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                <span>Origen (atribución)</span>
+                {showTimeline ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                <span>Historial de actividad</span>
               </button>
-              {showAttribution && (
+              {showTimeline && (
                 <div className="lead-drawer-section-body">
-                  <Field label="UTM source" value={lead.utm_source} />
-                  <Field label="UTM medium" value={lead.utm_medium} />
-                  <Field label="UTM campaign" value={lead.utm_campaign} />
-                  <Field label="UTM content" value={lead.utm_content} />
-                  <Field label="UTM term" value={lead.utm_term} />
-                  <Field label="gclid" value={lead.gclid} />
-                  <Field label="fbclid" value={lead.fbclid} />
-                  <Field
-                    label="Landing page"
-                    value={toDomain(lead.landing_page)}
-                    tooltip={lead.landing_page}
+                  <TouchTimeline
+                    events={touchEvents}
+                    status={touchStatus}
                   />
-                  <Field
-                    label="Landing referrer"
-                    value={toDomain(lead.landing_referrer)}
-                    tooltip={lead.landing_referrer}
-                  />
-                  <Field label="Primer contacto" value={formatDate(lead.first_seen)} />
-                  <Field label="Ruta previa" value={lead.previous_route} />
                 </div>
               )}
             </section>
-          )}
+
+            {hasAttribution(lead) && (
+              <section className="lead-drawer-section">
+                <button
+                  type="button"
+                  className="lead-drawer-collapsible"
+                  onClick={() => setShowAttribution((v) => !v)}
+                  aria-expanded={showAttribution}
+                >
+                  {showAttribution ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                  <span>Origen (atribución)</span>
+                </button>
+                {showAttribution && (
+                  <div className="lead-drawer-section-body">
+                    <Field label="UTM source" value={lead.utm_source} />
+                    <Field label="UTM medium" value={lead.utm_medium} />
+                    <Field label="UTM campaign" value={lead.utm_campaign} />
+                    <Field label="UTM content" value={lead.utm_content} />
+                    <Field label="UTM term" value={lead.utm_term} />
+                    <Field label="gclid" value={lead.gclid} />
+                    <Field label="fbclid" value={lead.fbclid} />
+                    <Field
+                      label="Landing page"
+                      value={toDomain(lead.landing_page)}
+                      tooltip={lead.landing_page}
+                    />
+                    <Field
+                      label="Landing referrer"
+                      value={toDomain(lead.landing_referrer)}
+                      tooltip={lead.landing_referrer}
+                    />
+                    <Field label="Primer contacto" value={formatDate(lead.first_seen)} />
+                    <Field label="Ruta previa" value={lead.previous_route} />
+                  </div>
+                )}
+              </section>
+            )}
+          </div>
+
+          <footer className="lead-drawer-footer">
+            <span className="lead-drawer-footer-id">Lead <strong>#{lead.lead_id || "—"}</strong></span>
+            <span className="lead-drawer-footer-dot" aria-hidden="true" />
+            <span>Actualizado {formatDate(lead.last_touch_at || lead.updated_at || lead.created_at)}</span>
+            {lead.sheet_url && (
+              <>
+                <span className="lead-drawer-footer-dot" aria-hidden="true" />
+                <a
+                  href={lead.sheet_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="lead-drawer-footer-link"
+                >
+                  Ver en Sheet <ExternalLink size={11} />
+                </a>
+              </>
+            )}
+          </footer>
         </div>
       </aside>
       {editOpen && (
@@ -509,7 +544,7 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onEditL
                 <label key={key} className={`lead-edit-field lead-edit-field--${EDIT_FIELD_SPANS[key] || "half"}`}>
                   <span>{label}</span>
                   {catalogName ? (
-                    <select value={editValues[key] || ""} onChange={(e) => setEditValues((v) => ({ ...v, [key]: e.target.value }))}>
+                    <select value={editValues[key] || ""} onChange={(e) => setEditValues((v) => syncCountryPhone(v, key, e.target.value))}>
                       {buildEditOptions(key, lead?.[key], catalogs, catalogName).map((option) => (
                         <option key={`${key}-${option.value}`} value={option.value} disabled={option.disabled}>{option.label}</option>
                       ))}
@@ -517,7 +552,7 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onEditL
                   ) : key === "notes" || key === "next_action" ? (
                     <textarea value={editValues[key] || ""} maxLength={2000} onChange={(e) => setEditValues((v) => ({ ...v, [key]: e.target.value }))} />
                   ) : (
-                    <input type={key === "work_email" ? "email" : "text"} value={editValues[key] || ""} maxLength={key === "whatsapp" ? 40 : 320} required={key === "full_name"} onChange={(e) => setEditValues((v) => ({ ...v, [key]: e.target.value }))} />
+                    <input type={key === "work_email" ? "email" : "text"} value={editValues[key] || ""} maxLength={key === "whatsapp" ? 40 : 320} required={key === "full_name"} onChange={(e) => setEditValues((v) => syncCountryPhone(v, key, e.target.value))} />
                   )}
                 </label>
               ))}
@@ -544,6 +579,28 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onEditL
   );
 }
 
+// Sincroniza país <-> WhatsApp en el form de edición. Cuando el usuario cambia
+// el número, si el prefijo mapea a un país conocido lo actualiza. Cuando cambia
+// el país, si el número tiene una lada distinta la reemplaza. Evita pisar
+// selecciones válidas cuando el prefijo es ambiguo (ej: +1).
+function syncCountryPhone(prev, key, value) {
+  if (key === "whatsapp") {
+    const detected = detectCountryFromPhone(value, prev.country_code);
+    if (detected && detected !== prev.country_code) {
+      return { ...prev, whatsapp: value, country_code: detected };
+    }
+    return { ...prev, whatsapp: value };
+  }
+  if (key === "country_code") {
+    const newLada = getLada(value);
+    if (newLada && prev.whatsapp) {
+      return { ...prev, country_code: value, whatsapp: replaceLadaInPhone(prev.whatsapp, newLada) };
+    }
+    return { ...prev, country_code: value };
+  }
+  return { ...prev, [key]: value };
+}
+
 function buildEditOptions(field, currentValue, catalogs, catalogName) {
   const current = String(currentValue || "").trim();
   const catalogItems = Array.isArray(catalogs?.[catalogName]) ? catalogs[catalogName] : [];
@@ -554,7 +611,7 @@ function buildEditOptions(field, currentValue, catalogs, catalogName) {
     : field === "business_model"
       ? BUSINESS_MODELS.map((value) => ({ value, label: value }))
       : [];
-  const placeholder = field === "country_code" ? "Seleccioná un país" : "Seleccioná una opción";
+  const placeholder = field === "country_code" ? "Selecciona un país" : "Selecciona una opción";
   const options = [{ value: "", label: placeholder, disabled: true }, ...canonical];
   if (current && !options.some((option) => option.value === current)) {
     options.splice(1, 0, { value: current, label: `${current} (valor histórico)` });
@@ -574,7 +631,7 @@ function SensitiveConfirmation({ action, lead, busy, error, onCancel, onConfirm 
         <h3>{archive ? "Archivar lead" : "Restaurar lead"}</h3>
         <p>{archive ? "El lead se ocultará del dashboard activo, pero NO se eliminará. La acción quedará registrada." : "El lead volverá al listado activo. La restauración quedará registrada."}</p>
         <label className="lead-edit-field"><span>Motivo {archive ? "(obligatorio)" : "(opcional)"}</span><textarea value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} required={archive} /></label>
-        <label className="lead-edit-field"><span>Escribí el ID para confirmar: <strong>{lead.lead_id}</strong></span><input value={confirmation} onChange={(e) => setConfirmation(e.target.value)} autoComplete="off" /></label>
+        <label className="lead-edit-field"><span>Escribe el ID para confirmar: <strong>{lead.lead_id}</strong></span><input value={confirmation} onChange={(e) => setConfirmation(e.target.value)} autoComplete="off" /></label>
         {error && <p className="sensitive-modal-error">{error}</p>}
         <div className="sensitive-modal-actions">
           <button type="button" className="btn btn-ghost" disabled={busy} onClick={onCancel}>Cancelar</button>
@@ -931,10 +988,15 @@ function ScoreExplain({ lead, open, onToggle, tab, onTabChange }) {
               )}
 
               {narrative.action && (
-                <p className="lead-drawer-narrative-action">
-                  <span className="lead-drawer-narrative-action-label">Próximo paso</span>
-                  {narrative.action}
-                </p>
+                <div className="lead-drawer-narrative-action">
+                  <span className="lead-drawer-narrative-action-icon" aria-hidden="true">
+                    <ArrowRight size={16} />
+                  </span>
+                  <div className="lead-drawer-narrative-action-body">
+                    <span className="lead-drawer-narrative-action-label">Próximo paso</span>
+                    <p className="lead-drawer-narrative-action-text">{narrative.action}</p>
+                  </div>
+                </div>
               )}
             </div>
           )}
@@ -1043,8 +1105,7 @@ function pipelineIndex(stage) {
   return found === -1 ? -1 : found;
 }
 
-function PipelineStepper({ current }) {
-  // Nurture no es parte del pipeline lineal, se rotula aparte para no confundir con progreso.
+function PipelineStepper({ current, onSelect, disabled }) {
   if (current === "nurture") {
     return (
       <div className="pipeline-stepper pipeline-stepper--offtrack">
@@ -1061,30 +1122,68 @@ function PipelineStepper({ current }) {
     : current === "cerrado_perdido" ? "perdido"
     : null;
 
+  const handleClick = (stageKey) => {
+    if (disabled || !onSelect) return;
+    onSelect(stageKey);
+  };
+
   return (
     <div className="pipeline-stepper" role="list" aria-label="Progreso en el pipeline">
       {PIPELINE_STAGES.map((stage, idx) => {
         const isPast = idx < currentIdx;
         const isCurrent = idx === currentIdx;
-        const isFuture = idx > currentIdx;
         const state = isPast ? "past" : isCurrent ? "current" : "future";
-        const showOutcome = stage.key === "closed" && outcome && (isCurrent || isPast);
-        const label = showOutcome
-          ? (outcome === "ganado" ? "Ganado" : "Perdido")
-          : stage.label;
-        const outcomeMod = showOutcome ? ` pipeline-step--${outcome}` : "";
+
+        if (stage.key === "closed") {
+          const wonActive = outcome === "ganado";
+          const lostActive = outcome === "perdido";
+          const wonState = wonActive ? "current" : isPast ? "past" : "future";
+          const lostState = lostActive ? "current" : isPast ? "past" : "future";
+          return (
+            <div key="closed-split" className="pipeline-step-split" role="listitem">
+              <button
+                type="button"
+                className={`pipeline-step pipeline-step--${wonState} pipeline-step--half pipeline-step--ganado`}
+                onClick={() => handleClick("cerrado_ganado")}
+                disabled={disabled || wonActive}
+                aria-current={wonActive ? "step" : undefined}
+                data-current-stage={wonActive ? "cerrado_ganado" : undefined}
+                title="Marcar como Cerrado, ganado"
+              >
+                <span className="pipeline-step-dot" />
+                <span className="pipeline-step-label">Ganado</span>
+              </button>
+              <button
+                type="button"
+                className={`pipeline-step pipeline-step--${lostState} pipeline-step--half pipeline-step--perdido`}
+                onClick={() => handleClick("cerrado_perdido")}
+                disabled={disabled || lostActive}
+                aria-current={lostActive ? "step" : undefined}
+                data-current-stage={lostActive ? "cerrado_perdido" : undefined}
+                title="Marcar como Cerrado, perdido"
+              >
+                <span className="pipeline-step-dot" />
+                <span className="pipeline-step-label">Perdido</span>
+              </button>
+            </div>
+          );
+        }
 
         return (
           <React.Fragment key={stage.key}>
-            <div
-              className={`pipeline-step pipeline-step--${state}${outcomeMod}`}
+            <button
+              type="button"
+              className={`pipeline-step pipeline-step--${state}`}
+              onClick={() => handleClick(stage.key)}
+              disabled={disabled || isCurrent}
               role="listitem"
               aria-current={isCurrent ? "step" : undefined}
               data-current-stage={isCurrent ? current : undefined}
+              title={isCurrent ? stage.label : `Mover a ${stage.label}`}
             >
               <span className="pipeline-step-dot" />
-              <span className="pipeline-step-label">{label}</span>
-            </div>
+              <span className="pipeline-step-label">{stage.label}</span>
+            </button>
             {idx < PIPELINE_STAGES.length - 1 && (
               <span
                 className={`pipeline-connector ${idx < currentIdx ? "pipeline-connector--past" : ""}`}
