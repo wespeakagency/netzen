@@ -3638,22 +3638,22 @@ button.pipeline-step:disabled {
   color: var(--nz-text);
 }
 
-/* Pill de actividad/aging en tabla y cards. */
+/* Actividad/aging en tabla y cards: solo texto, color por tier. */
 .cell-activity {
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 11.5px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  font-size: 12.5px;
   font-weight: 500;
-  background: var(--nz-surface-alt);
   color: var(--nz-text-muted);
-  border: 1px solid var(--nz-border);
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
-.cell-activity--recent { background: #f1f5f9; color: #334155; border-color: #cbd5e1; }
-.cell-activity--warm { background: #fef3c7; color: #78350f; border-color: #fcd34d; }
-.cell-activity--cold { background: #fee2e2; color: #7f1d1d; border-color: #fca5a5; }
+.cell-activity--recent { color: var(--nz-text-muted); }
+.cell-activity--warm { color: #b45309; font-weight: 600; }
+.cell-activity--cold { color: #b91c1c; font-weight: 600; }
 
 .lead-card-meta-right {
   display: inline-flex;
