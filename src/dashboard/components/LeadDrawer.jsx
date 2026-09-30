@@ -62,7 +62,7 @@ const isArchived = (lead) => /\[\[CRM_ARCHIVE:v1\|/.test(String(lead?.flags || "
 export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onEditLead, onArchiveLead, onRestoreLead }) {
   const closeBtnRef = useRef(null);
   const [showAttribution, setShowAttribution] = useState(false);
-  const [showTimeline, setShowTimeline] = useState(true);
+  const [showTimeline, setShowTimeline] = useState(false);
   const [showScoreExplain, setShowScoreExplain] = useState(true);
   const [explainTab, setExplainTab] = useState("why"); // "why" | "answers" | "bars"
   const [phoneCopied, setPhoneCopied] = useState(false);
@@ -457,12 +457,28 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onEditL
             />
           </div>
 
-          <Section title="Historial de actividad">
-            <TouchTimeline
-              events={touchEvents}
-              status={touchStatus}
-            />
-          </Section>
+          <section className="lead-drawer-section">
+            <button
+              type="button"
+              className="lead-drawer-collapsible"
+              onClick={() => setShowTimeline((v) => !v)}
+              aria-expanded={showTimeline}
+            >
+              {showTimeline ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              <span>Historial de actividad</span>
+              {touchEvents.length > 0 && (
+                <span className="lead-drawer-collapsible-count">{touchEvents.length}</span>
+              )}
+            </button>
+            {showTimeline && (
+              <div className="lead-drawer-section-body">
+                <TouchTimeline
+                  events={touchEvents}
+                  status={touchStatus}
+                />
+              </div>
+            )}
+          </section>
 
           <div className="lead-drawer-meta-zone">
             <p className="lead-drawer-meta-zone-eyebrow">Antecedentes y registro</p>
