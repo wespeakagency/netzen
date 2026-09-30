@@ -61,7 +61,7 @@ export function LeadDrawer({ lead, onClose, onUpdateLead }) {
       setStageStatus("idle");
       // Refetch touch events para reflejar el cambio manual en el timeline sin esperar refresh general.
       if (lead.lead_id) {
-        fetchTouchEvents(lead.lead_id)
+        fetchTouchEvents(lead.lead_id, { force: true })
           .then((data) => setTouchEvents(Array.isArray(data?.events) ? data.events : []))
           .catch(() => { /* silencioso, el cambio de estado ya fue exitoso */ });
       }
@@ -266,7 +266,7 @@ export function LeadDrawer({ lead, onClose, onUpdateLead }) {
             </Section>
           )}
 
-          <Section title="Contexto de negocio">
+          <Section title="Datos del prospecto">
             <Field label="Cargo" value={lead.job_title} />
             <Field label="País" value={lead.country_code} />
             <Field label="Modelo" value={lead.business_model} />
@@ -276,13 +276,8 @@ export function LeadDrawer({ lead, onClose, onUpdateLead }) {
               value={SITUACION_LABELS[lead.situacion] || lead.situacion}
             />
           </Section>
-
-          <Section title="Calificación">
-            <Field label="Rol en la decisión" value={lead.decision_role} />
-            <Field label="Presupuesto" value={lead.budget_readiness} />
-            <Field label="Ventana de decisión" value={lead.timeline} />
-            <Field label="Recursos" value={lead.implementation_readiness} />
-          </Section>
+          {/* Rol, presupuesto, ventana y recursos ya viven en la tab "Respuestas" del "¿Por qué este score?"
+              con más contexto (score 0-3 + eje al que aportan). Eliminados de acá para evitar duplicación. */}
 
           <ScoreExplain
             lead={lead}

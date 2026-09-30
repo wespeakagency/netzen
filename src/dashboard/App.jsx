@@ -4,8 +4,10 @@ import { HAS_DASHBOARD_PASSWORD } from "../lib/env.js";
 import { Header } from "./components/Header.jsx";
 import { Counters } from "./components/Counters.jsx";
 import { LeadsTable } from "./components/LeadsTable.jsx";
+import { STAGE_LABELS } from "./components/LeadDrawer.jsx";
 import { Filters, applyFilters } from "./components/Filters.jsx";
 import { PasswordGate, isAuthenticated, clearAuth } from "./components/PasswordGate.jsx";
+import { useToast } from "./hooks/useToast.js";
 
 const INITIAL_FILTERS = {
   search: "",
@@ -45,6 +47,7 @@ export function App() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [filters, setFilters] = useState(INITIAL_FILTERS);
+  const { toasts, showToast, dismissToast } = useToast();
 
   const load = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setRefreshing(true);
@@ -109,11 +112,27 @@ export function App() {
     }));
     try {
       await updateLead({ leadId, field, value });
+      if (field === "lifecycle_stage") {
+        showToast({
+          type: "success",
+          message: `Estado actualizado a ${STAGE_LABELS[value] || String(value).replace(/_/g, " ")}`
+        });
+      }
     } catch (err) {
       setLeads((prev) => prev.map((l) => (l.lead_id === leadId ? { ...l, [field]: previousValue } : l)));
+      if (field === "lifecycle_stage") {
+        showToast({
+          type: "error",
+          message: "No se pudo guardar. Reintentar",
+          actionLabel: "Reintentar",
+          onAction: () => {
+            handleUpdateLead({ leadId, field, value }).catch(() => {});
+          }
+        });
+      }
       throw err;
     }
-  }, []);
+  }, [showToast]);
 
   const handleLogout = () => {
     clearAuth();
@@ -211,6 +230,8 @@ export function App() {
         <span>Netzen · Dashboard interno · prueba</span>
         <span>Data desde Google Sheets vía Apps Script</span>
       </footer>
+
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }
@@ -219,24 +240,85 @@ function DashboardSkeleton() {
   return (
     <div className="skeleton-shell">
       <div className="skeleton-filters">
-        <div className="skeleton-line skeleton-line-wide" />
-        <div className="skeleton-pills">
-          <div className="skeleton-pill" />
-          <div className="skeleton-pill" />
-          <div className="skeleton-pill" />
-          <div className="skeleton-pill" />
+        <div className="skeleton-quick-chips">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="skeleton-chip" />
+          ))}
+        </div>
+        <div className="skeleton-search-row">
+          <div className="skeleton-search" />
+          <div className="skeleton-button" />
+        </div>
+        <div className="skeleton-filter-groups">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="skeleton-filter-group">
+              <div className="skeleton-label" />
+              <div className="skeleton-control" />
+            </div>
+          ))}
         </div>
       </div>
       <div className="skeleton-counters">
         {[0, 1, 2, 3, 4].map((i) => (
-          <div key={i} className="skeleton-counter" />
+          <div key={i} className="skeleton-counter">
+            <div className="skeleton-counter-label" />
+            <div className="skeleton-counter-number" />
+            <div className="skeleton-counter-progress" />
+          </div>
         ))}
       </div>
       <div className="skeleton-table">
-        {[0, 1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="skeleton-row" />
+        <div className="skeleton-table-head">
+          {[12, 8, 18, 16, 8, 12, 14, 18, 14, 8, 12].map((width, i) => (
+            <div key={i} className="skeleton-table-cell" style={{ flex: width }} />
+          ))}
+        </div>
+        {Array.from({ length: 8 }).map((_, rowIndex) => (
+          <div key={rowIndex} className="skeleton-row">
+            {[12, 8, 18, 16, 8, 12, 14, 18, 14, 8, 12].map((width, cellIndex) => (
+              <div key={cellIndex} className="skeleton-table-cell" style={{ flex: width }} />
+            ))}
+          </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function ToastContainer({ toasts, onDismiss }) {
+  if (!toasts.length) return null;
+
+  return (
+    <div className="toast-container" aria-live="polite" aria-label="Notificaciones">
+      {toasts.map((toast) => (
+        <div
+          key={toast.id}
+          className={`toast toast--${toast.type || "success"}`}
+          role={toast.type === "error" ? "alert" : "status"}
+        >
+          <span className="toast-message">{toast.message}</span>
+          {toast.actionLabel && (
+            <button
+              type="button"
+              className="toast-action"
+              onClick={() => {
+                onDismiss(toast.id);
+                toast.onAction?.();
+              }}
+            >
+              {toast.actionLabel}
+            </button>
+          )}
+          <button
+            type="button"
+            className="toast-close"
+            onClick={() => onDismiss(toast.id)}
+            aria-label="Cerrar notificación"
+          >
+            ×
+          </button>
+        </div>
+      ))}
     </div>
   );
 }

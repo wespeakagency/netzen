@@ -1,8 +1,14 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { AlertCircle, Zap, Timer, Clock, HelpCircle, Info, ChevronLeft, ChevronRight } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  AlertCircle, Zap, Timer, Clock, HelpCircle, Info, ChevronLeft, ChevronRight,
+  Inbox, SearchX,
+} from "lucide-react";
+import { prefetchTouchEvents } from "../api.js";
+import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts.js";
 import { LeadDrawer, STAGE_LABELS, timeSince } from "./LeadDrawer.jsx";
 
 const PAGE_SIZE = 25;
+const PREFETCH_DELAY_MS = 200;
 
 const COLUMNS = [
   { key: "category", label: "Categoría", type: "category", width: "110px" },
@@ -26,6 +32,15 @@ const CATEGORY_ICONS = {
   PENDIENTE: HelpCircle,
   NO_SCORABLE: Info,
 };
+
+const SHORTCUTS = [
+  { keys: "?", label: "Ver atajos" },
+  { keys: "/", label: "Enfocar búsqueda" },
+  { keys: "Esc", label: "Cerrar panel o atajos" },
+  { keys: "E", label: "Enviar email del lead abierto" },
+  { keys: "W", label: "Abrir WhatsApp del lead abierto" },
+  { keys: "J / K", label: "Lead siguiente / anterior" },
+];
 
 const COUNTRY_ISO = {
   "méxico": "MX", "mexico": "MX",
@@ -65,6 +80,8 @@ export function LeadsTable({ leads, hasActiveFilters, onClearFilters, onUpdateLe
   const [sortDir, setSortDir] = useState("desc");
   const [selectedLeadId, setSelectedLeadId] = useState(null);
   const [page, setPage] = useState(1);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const prefetchTimersRef = useRef(new Map());
   const selectedLead = useMemo(
     () => (selectedLeadId ? leads.find((l) => l.lead_id === selectedLeadId) || null : null),
     [leads, selectedLeadId]
@@ -101,6 +118,34 @@ export function LeadsTable({ leads, hasActiveFilters, onClearFilters, onUpdateLe
     setPage(1);
   }, [leads, sortBy, sortDir]);
 
+  const scheduleTouchEventsPrefetch = useCallback((leadId) => {
+    if (!leadId) return;
+    const timers = prefetchTimersRef.current;
+    const existing = timers.get(leadId);
+    if (existing) clearTimeout(existing);
+    const timeoutId = setTimeout(() => {
+      timers.delete(leadId);
+      prefetchTouchEvents(leadId);
+    }, PREFETCH_DELAY_MS);
+    timers.set(leadId, timeoutId);
+  }, []);
+
+  const cancelTouchEventsPrefetch = useCallback((leadId) => {
+    if (!leadId) return;
+    const timeoutId = prefetchTimersRef.current.get(leadId);
+    if (!timeoutId) return;
+    clearTimeout(timeoutId);
+    prefetchTimersRef.current.delete(leadId);
+  }, []);
+
+  useEffect(() => {
+    const timers = prefetchTimersRef.current;
+    return () => {
+      timers.forEach((timeoutId) => clearTimeout(timeoutId));
+      timers.clear();
+    };
+  }, []);
+
   const handleSort = (col) => {
     if (sortBy === col) {
       setSortDir(sortDir === "asc" ? "desc" : "asc");
@@ -110,30 +155,63 @@ export function LeadsTable({ leads, hasActiveFilters, onClearFilters, onUpdateLe
     }
   };
 
+  const openDrawerFor = useCallback((lead) => setSelectedLeadId(lead?.lead_id || null), []);
+  const closeDrawer = useCallback(() => setSelectedLeadId(null), []);
+
+  const openRelativeLead = useCallback((direction) => {
+    if (!selectedLeadId || sorted.length === 0) return;
+    const currentIndex = sorted.findIndex((lead) => lead.lead_id === selectedLeadId);
+    if (currentIndex === -1) return;
+    const nextIndex = Math.min(sorted.length - 1, Math.max(0, currentIndex + direction));
+    const nextLead = sorted[nextIndex];
+    if (nextLead?.lead_id && nextLead.lead_id !== selectedLeadId) {
+      setSelectedLeadId(nextLead.lead_id);
+    }
+  }, [selectedLeadId, sorted]);
+
+  useKeyboardShortcuts({
+    selectedLead,
+    selectedLeadId,
+    showShortcuts,
+    setShowShortcuts,
+    onCloseDrawer: closeDrawer,
+    onOpenRelativeLead: openRelativeLead,
+  });
+
   if (!leads.length) {
     return (
-      <div className="empty-state">
-        {hasActiveFilters ? (
-          <>
-            <h3>Ningún lead coincide con los filtros aplicados</h3>
-            <p>Probá ajustar la búsqueda o quitar filtros para ver más resultados.</p>
-            {onClearFilters && (
-              <button className="btn btn-primary" onClick={onClearFilters}>
-                Limpiar filtros
-              </button>
-            )}
-          </>
-        ) : (
-          <>
-            <h3>No hay leads para mostrar</h3>
-            <p>Cuando entren leads por los formularios del sitio, aparecerán acá.</p>
-          </>
-        )}
-      </div>
+      <>
+        <div className={`empty-state ${hasActiveFilters ? "empty-state--filtered" : "empty-state--initial"}`}>
+          {hasActiveFilters ? (
+            <>
+              <span className="empty-state-icon" aria-hidden="true">
+                <SearchX size={28} />
+              </span>
+              <h3>Ningún lead coincide con los filtros</h3>
+              <p>Probá quitar algún filtro o ampliar el rango de fechas.</p>
+              {onClearFilters && (
+                <button className="btn btn-primary" onClick={onClearFilters}>
+                  Limpiar filtros
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              <span className="empty-state-icon" aria-hidden="true">
+                <Inbox size={28} />
+              </span>
+              <h3>Aún no hay leads</h3>
+              <p>Cuando alguien complete el formulario del sitio, aparecerá acá con su clasificación y contexto.</p>
+              <p className="empty-state-cta">
+                Puedes verificar que el formulario esté enviando a Google Sheets desde la sección de configuración.
+              </p>
+            </>
+          )}
+        </div>
+        <ShortcutsOverlay open={showShortcuts} onClose={() => setShowShortcuts(false)} />
+      </>
     );
   }
-
-  const openDrawerFor = (lead) => setSelectedLeadId(lead.lead_id || null);
 
   return (
     <>
@@ -166,6 +244,8 @@ export function LeadsTable({ leads, hasActiveFilters, onClearFilters, onUpdateLe
                   data-category={cat}
                   className="lead-row"
                   onClick={() => openDrawerFor(lead)}
+                  onMouseEnter={() => scheduleTouchEventsPrefetch(lead.lead_id)}
+                  onMouseLeave={() => cancelTouchEventsPrefetch(lead.lead_id)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
@@ -202,6 +282,8 @@ export function LeadsTable({ leads, hasActiveFilters, onClearFilters, onUpdateLe
             key={lead.lead_id || `card-${idx}`}
             lead={lead}
             onClick={() => openDrawerFor(lead)}
+            onMouseEnter={() => scheduleTouchEventsPrefetch(lead.lead_id)}
+            onMouseLeave={() => cancelTouchEventsPrefetch(lead.lead_id)}
           />
         ))}
       </div>
@@ -218,12 +300,54 @@ export function LeadsTable({ leads, hasActiveFilters, onClearFilters, onUpdateLe
         />
       )}
 
-      <LeadDrawer lead={selectedLead} onClose={() => setSelectedLeadId(null)} onUpdateLead={onUpdateLead} />
+      <LeadDrawer lead={selectedLead} onClose={closeDrawer} onUpdateLead={onUpdateLead} />
+
+      <ShortcutsOverlay open={showShortcuts} onClose={() => setShowShortcuts(false)} />
     </>
   );
 }
 
-function LeadCard({ lead, onClick }) {
+function ShortcutsOverlay({ open, onClose }) {
+  if (!open) return null;
+
+  return (
+    <div
+      className="shortcuts-overlay"
+      role="presentation"
+      onClick={onClose}
+    >
+      <section
+        className="shortcuts-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="shortcuts-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="shortcuts-card-head">
+          <h3 id="shortcuts-title">Atajos de teclado</h3>
+          <button
+            type="button"
+            className="shortcuts-close"
+            onClick={onClose}
+            aria-label="Cerrar atajos"
+          >
+            ×
+          </button>
+        </div>
+        <ul className="shortcuts-list">
+          {SHORTCUTS.map((shortcut) => (
+            <li key={shortcut.keys} className="shortcuts-list-item">
+              <kbd>{shortcut.keys}</kbd>
+              <span>{shortcut.label}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </div>
+  );
+}
+
+function LeadCard({ lead, onClick, onMouseEnter, onMouseLeave }) {
   const cat = lead.category || "PENDIENTE";
   const Icon = CATEGORY_ICONS[cat] || HelpCircle;
   const score = lead.score_priority;
@@ -251,6 +375,8 @@ function LeadCard({ lead, onClick }) {
       tabIndex={0}
       aria-label={label}
       onClick={onClick}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();

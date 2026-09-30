@@ -1,6 +1,9 @@
 import { SHEETS_ENDPOINT, DASHBOARD_API_TOKEN } from "../lib/env.js";
 
 const EDITABLE_FIELDS = ["lifecycle_stage"];
+const TOUCH_EVENTS_CACHE_TTL_MS = 30_000;
+
+export const touchEventsCache = new Map();
 
 export async function fetchLeads() {
   if (!SHEETS_ENDPOINT) {
@@ -32,13 +35,28 @@ export async function fetchCatalogs() {
   return res.json();
 }
 
-export async function fetchTouchEvents(leadId) {
+export async function fetchTouchEvents(leadId, { force = false } = {}) {
   if (!SHEETS_ENDPOINT) throw new Error("VITE_SHEETS_ENDPOINT no configurado");
   if (!leadId) throw new Error("leadId requerido");
+  const cached = touchEventsCache.get(leadId);
+  if (!force && cached && Date.now() - cached.fetchedAt < TOUCH_EVENTS_CACHE_TTL_MS) {
+    return { events: cached.events };
+  }
   const url = `${SHEETS_ENDPOINT}?action=touchEvents&lead_id=${encodeURIComponent(leadId)}`;
   const res = await fetch(url, { method: "GET" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  const data = await res.json();
+  touchEventsCache.set(leadId, {
+    events: Array.isArray(data?.events) ? data.events : [],
+    fetchedAt: Date.now()
+  });
+  return data;
+}
+
+export function prefetchTouchEvents(leadId) {
+  void fetchTouchEvents(leadId).catch(() => {
+    // Prefetch no debe afectar la interacción principal de la tabla.
+  });
 }
 
 export async function updateLead({ leadId, field, value }) {
