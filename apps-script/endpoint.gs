@@ -22,7 +22,13 @@ function doGet(e) {
       return handleTrackContact_(e);
     }
 
-    return jsonResponseGet_({ error: 'unknown_action', supported: ['leads', 'metrics', 'catalogs', 'trackContact'] });
+    // Historial de touch events de un lead (para el timeline del drawer del dashboard).
+    // Requiere ?lead_id=XXX. Devuelve los ultimos 20 eventos de 02_TOUCH_EVENTS.
+    if (action === 'touchEvents') {
+      return handleTouchEvents_(e);
+    }
+
+    return jsonResponseGet_({ error: 'unknown_action', supported: ['leads', 'metrics', 'catalogs', 'trackContact', 'touchEvents'] });
   } catch (err) {
     return jsonResponseGet_({ error: 'internal_error', message: String(err) });
   }

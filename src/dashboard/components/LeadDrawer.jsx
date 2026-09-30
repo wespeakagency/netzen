@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { X, Mail, MessageCircle, ChevronDown, ChevronRight, Copy, Check } from "lucide-react";
+import { X, Mail, MessageCircle, ChevronDown, ChevronRight, Copy, Check, Edit3, Activity } from "lucide-react";
+import { fetchTouchEvents } from "../api.js";
 
 const SITUACION_LABELS = {
   A: "Apenas empieza / explorando",
@@ -21,9 +22,12 @@ export const STAGE_LABELS = {
 export function LeadDrawer({ lead, onClose, onUpdateLead }) {
   const closeBtnRef = useRef(null);
   const [showAttribution, setShowAttribution] = useState(false);
+  const [showTimeline, setShowTimeline] = useState(true);
   const [phoneCopied, setPhoneCopied] = useState(false);
   const [stageStatus, setStageStatus] = useState("idle"); // idle | saving | error
   const [stageError, setStageError] = useState("");
+  const [touchEvents, setTouchEvents] = useState([]);
+  const [touchStatus, setTouchStatus] = useState("idle"); // idle | loading | ok | error
 
   const handleStageChange = async (e) => {
     const newStage = e.target.value;
@@ -65,11 +69,36 @@ export function LeadDrawer({ lead, onClose, onUpdateLead }) {
     };
   }, [lead, onClose]);
 
+  // Carga touch events cuando cambia el lead. Si el endpoint no existe aun (deploy pendiente),
+  // fallback a array vacio en vez de romper el drawer.
+  useEffect(() => {
+    if (!lead?.lead_id) {
+      setTouchEvents([]);
+      setTouchStatus("idle");
+      return;
+    }
+    let cancelled = false;
+    setTouchStatus("loading");
+    fetchTouchEvents(lead.lead_id)
+      .then((data) => {
+        if (cancelled) return;
+        setTouchEvents(Array.isArray(data?.events) ? data.events : []);
+        setTouchStatus("ok");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setTouchEvents([]);
+        setTouchStatus("error");
+      });
+    return () => { cancelled = true; };
+  }, [lead?.lead_id]);
+
   if (!lead) return null;
 
   const title = lead.full_name || lead.work_email || "Lead sin nombre";
   const subtitle = lead.company_name || "";
   const scoreTier = getScoreTier(lead.score_priority);
+  const aging = timeSince(lead.created_at, lead.lifecycle_stage);
 
   return (
     <div
@@ -114,6 +143,14 @@ export function LeadDrawer({ lead, onClose, onUpdateLead }) {
             {lead.lifecycle_stage && (
               <span className={`lead-drawer-stage-pill lead-drawer-stage-pill--${lead.lifecycle_stage}`}>
                 {STAGE_LABELS[lead.lifecycle_stage] || lead.lifecycle_stage}
+              </span>
+            )}
+            {aging && (
+              <span
+                className={`lead-drawer-aging-pill lead-drawer-aging-pill--${aging.tier}`}
+                title={`Creado ${formatDate(lead.created_at)}`}
+              >
+                {aging.label}
               </span>
             )}
             {lead.route_code && (
@@ -195,6 +232,7 @@ export function LeadDrawer({ lead, onClose, onUpdateLead }) {
           )}
 
           <Section title="Contexto de negocio">
+            <Field label="Cargo" value={lead.job_title} />
             <Field label="País" value={lead.country_code} />
             <Field label="Modelo" value={lead.business_model} />
             <Field label="Tamaño de la red" value={lead.network_size} />
@@ -211,6 +249,8 @@ export function LeadDrawer({ lead, onClose, onUpdateLead }) {
             <Field label="Recursos" value={lead.implementation_readiness} />
           </Section>
 
+          <ScoringBreakdown lead={lead} />
+
           {lead.user_message && (
             <Section title="Mensaje del prospecto">
               <p className="lead-drawer-message">{lead.user_message}</p>
@@ -220,6 +260,26 @@ export function LeadDrawer({ lead, onClose, onUpdateLead }) {
           <Section title="Metadata">
             <Field label="Creado" value={formatDate(lead.created_at)} />
           </Section>
+
+          <section className="lead-drawer-section">
+            <button
+              type="button"
+              className="lead-drawer-collapsible"
+              onClick={() => setShowTimeline((v) => !v)}
+              aria-expanded={showTimeline}
+            >
+              {showTimeline ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              <span>Historial de actividad</span>
+            </button>
+            {showTimeline && (
+              <div className="lead-drawer-section-body">
+                <TouchTimeline
+                  events={touchEvents}
+                  status={touchStatus}
+                />
+              </div>
+            )}
+          </section>
 
           {hasAttribution(lead) && (
             <section className="lead-drawer-section">
@@ -335,4 +395,153 @@ function hasAttribution(lead) {
     "gclid", "fbclid", "landing_page", "landing_referrer", "first_seen", "previous_route",
   ];
   return keys.some((k) => lead[k]);
+}
+
+// Retorna label relativo ("hace 2 horas") + tier de color segun edad y estado.
+// tier "cold" solo si es viejo Y el lead sigue en estado inicial (nuevo/vacio).
+function timeSince(dateValue, lifecycleStage) {
+  if (!dateValue) return null;
+  const d = new Date(dateValue);
+  if (isNaN(d.getTime())) return null;
+  const diffMs = Date.now() - d.getTime();
+  if (diffMs < 0) return { label: "recién creado", tier: "recent" };
+
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHr / 24);
+
+  let label;
+  if (diffMin < 1) label = "hace unos segundos";
+  else if (diffMin < 60) label = `hace ${diffMin} min`;
+  else if (diffHr < 24) label = `hace ${diffHr} h`;
+  else if (diffDay === 1) label = "hace 1 día";
+  else label = `hace ${diffDay} días`;
+
+  const untouched = !lifecycleStage || lifecycleStage === "nuevo";
+  let tier = "recent";
+  if (diffDay >= 7 && untouched) tier = "cold";
+  else if (diffHr >= 24) tier = "warm";
+
+  return { label, tier };
+}
+
+function ScoringBreakdown({ lead }) {
+  const dims = [
+    { key: "alignment", label: "Alignment", value: lead.score_alignment },
+    { key: "potential", label: "Potential", value: lead.score_potential },
+    { key: "intent", label: "Intent", value: lead.score_intent },
+    { key: "confidence", label: "Confidence", value: lead.score_confidence },
+  ].filter((d) => d.value != null && d.value !== "" && Number.isFinite(Number(d.value)));
+
+  const priority = lead.score_priority;
+  if (dims.length === 0 && (priority == null || priority === "")) return null;
+
+  const priorityTier = getScoreTier(priority);
+  const confidence = Number(lead.score_confidence);
+  const lowConfidence = Number.isFinite(confidence) && confidence < 60;
+
+  return (
+    <section className="lead-drawer-section">
+      <h3 className="lead-drawer-section-title">Scoring</h3>
+      <div className="lead-drawer-section-body">
+        {priority != null && priority !== "" && (
+          <div className="lead-drawer-scoring-header">
+            <div className={`lead-drawer-scoring-priority lead-drawer-scoring-priority--${priorityTier}`}>
+              <span className="lead-drawer-scoring-priority-num">{priority}</span>
+              <span className="lead-drawer-scoring-priority-label">Prioridad</span>
+            </div>
+            <p className="lead-drawer-scoring-formula">
+              50% Alignment · 35% Potential · 15% Intent
+            </p>
+          </div>
+        )}
+        {dims.length > 0 && (
+          <div className="lead-drawer-scoring-bars">
+            {dims.map((d) => {
+              const num = Number(d.value);
+              const tier = getScoreTier(num);
+              const width = Math.max(0, Math.min(100, num));
+              return (
+                <div key={d.key} className="lead-drawer-score-bar">
+                  <div className="lead-drawer-score-bar-head">
+                    <span className="lead-drawer-score-bar-label">{d.label}</span>
+                    <span className="lead-drawer-score-bar-num">{num}</span>
+                  </div>
+                  <div className="lead-drawer-score-bar-track">
+                    <div
+                      className={`lead-drawer-score-bar-fill lead-drawer-score-bar-fill--${tier}`}
+                      style={{ width: `${width}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {lowConfidence && (
+          <p className="lead-drawer-scoring-note">
+            Score preliminar, confianza baja ({confidence}%)
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function TouchTimeline({ events, status }) {
+  if (status === "loading") {
+    return <p className="lead-drawer-timeline-empty">Cargando historial…</p>;
+  }
+  if (status === "error") {
+    return (
+      <p className="lead-drawer-timeline-empty">
+        No se pudo cargar el historial (verificá que el backend esté actualizado).
+      </p>
+    );
+  }
+  if (!events || events.length === 0) {
+    return <p className="lead-drawer-timeline-empty">Sin actividad registrada aún.</p>;
+  }
+
+  return (
+    <ul className="lead-drawer-timeline">
+      {events.map((e) => {
+        const meta = describeTouchEvent(e);
+        const Icon = meta.icon;
+        const timeMeta = timeSince(e.event_at);
+        return (
+          <li key={e.event_id || `${e.event_at}-${e.channel}`} className="lead-drawer-timeline-item">
+            <span className={`lead-drawer-timeline-icon lead-drawer-timeline-icon--${meta.tone}`}>
+              <Icon size={12} />
+            </span>
+            <div className="lead-drawer-timeline-body">
+              <div className="lead-drawer-timeline-title">{meta.title}</div>
+              {e.stage_advanced && e.previous_stage && (
+                <div className="lead-drawer-timeline-sub">
+                  Estado: {e.previous_stage} → contactado
+                </div>
+              )}
+              <div className="lead-drawer-timeline-time">
+                {timeMeta ? timeMeta.label : formatDate(e.event_at)}
+              </div>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function describeTouchEvent(evt) {
+  const channel = String(evt.channel || "").toLowerCase();
+  if (channel === "email_opened") {
+    return { icon: Mail, tone: "email", title: "Email de notificación abierto" };
+  }
+  if (channel === "whatsapp") {
+    return { icon: MessageCircle, tone: "whatsapp", title: "WhatsApp clickeado" };
+  }
+  if (channel === "manual" || channel === "dashboard") {
+    return { icon: Edit3, tone: "manual", title: "Actualización manual" };
+  }
+  return { icon: Activity, tone: "neutral", title: channel || "Evento" };
 }

@@ -1005,6 +1005,23 @@ body {
   color: var(--nz-text);
   border: 1px solid var(--nz-border);
 }
+
+/* Pill de aging: cuanto hace que entro el lead. */
+.lead-drawer-aging-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--nz-surface-alt);
+  color: var(--nz-text-muted);
+  border: 1px solid var(--nz-border);
+  cursor: help;
+}
+.lead-drawer-aging-pill--recent { background: #f1f5f9; color: #334155; border-color: #cbd5e1; }
+.lead-drawer-aging-pill--warm { background: #fef3c7; color: #78350f; border-color: #fcd34d; }
+.lead-drawer-aging-pill--cold { background: #fee2e2; color: #7f1d1d; border-color: #fca5a5; }
 .lead-drawer-stage-pill--nuevo { background: #eff6ff; color: #1e3a8a; border-color: #bfdbfe; }
 .lead-drawer-stage-pill--contactado { background: #ecfeff; color: #155e75; border-color: #a5f3fc; }
 .lead-drawer-stage-pill--calificado { background: #f5f3ff; color: #5b21b6; border-color: #ddd6fe; }
@@ -1288,6 +1305,167 @@ body {
   border-radius: 8px;
   padding: 12px 14px;
   white-space: pre-wrap;
+}
+
+/* ============ Scoring breakdown ============ */
+
+.lead-drawer-scoring-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 4px;
+}
+
+.lead-drawer-scoring-priority {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  flex-shrink: 0;
+}
+.lead-drawer-scoring-priority-num {
+  font-family: "Montserrat", sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
+.lead-drawer-scoring-priority-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.75;
+  margin-top: 3px;
+}
+.lead-drawer-scoring-priority--high { background: #dcfce7; color: #14532d; border-color: #86efac; }
+.lead-drawer-scoring-priority--mid { background: #fef3c7; color: #78350f; border-color: #fcd34d; }
+.lead-drawer-scoring-priority--low { background: #ffedd5; color: #7c2d12; border-color: #fdba74; }
+.lead-drawer-scoring-priority--cold { background: #fee2e2; color: #7f1d1d; border-color: #fca5a5; }
+.lead-drawer-scoring-priority--none { background: var(--nz-surface-alt); color: var(--nz-text-muted); border-color: var(--nz-border); }
+
+.lead-drawer-scoring-formula {
+  font-size: 12px;
+  color: var(--nz-text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.lead-drawer-scoring-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.lead-drawer-score-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lead-drawer-score-bar-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12px;
+}
+.lead-drawer-score-bar-label { color: var(--nz-text-muted); font-weight: 500; }
+.lead-drawer-score-bar-num {
+  color: var(--nz-text);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.lead-drawer-score-bar-track {
+  height: 6px;
+  background: var(--nz-surface-alt);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.lead-drawer-score-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+.lead-drawer-score-bar-fill--high { background: #22c55e; }
+.lead-drawer-score-bar-fill--mid { background: #f59e0b; }
+.lead-drawer-score-bar-fill--low { background: #fb923c; }
+.lead-drawer-score-bar-fill--cold { background: #ef4444; }
+.lead-drawer-score-bar-fill--none { background: var(--nz-border-strong); }
+
+.lead-drawer-scoring-note {
+  font-size: 11.5px;
+  color: #78350f;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin: 8px 0 0;
+}
+
+/* ============ Timeline de touch events ============ */
+
+.lead-drawer-timeline {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lead-drawer-timeline-empty {
+  font-size: 12.5px;
+  color: var(--nz-text-muted);
+  font-style: italic;
+  margin: 0;
+}
+
+.lead-drawer-timeline-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.lead-drawer-timeline-icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  margin-top: 1px;
+}
+.lead-drawer-timeline-icon--email { background: #b3261e; }
+.lead-drawer-timeline-icon--whatsapp { background: #25d366; }
+.lead-drawer-timeline-icon--manual { background: #6366f1; }
+.lead-drawer-timeline-icon--neutral { background: var(--nz-text-muted); }
+
+.lead-drawer-timeline-body {
+  flex: 1;
+  min-width: 0;
+}
+.lead-drawer-timeline-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--nz-text);
+  line-height: 1.35;
+}
+.lead-drawer-timeline-sub {
+  font-size: 12px;
+  color: var(--nz-text-muted);
+  margin-top: 2px;
+}
+.lead-drawer-timeline-time {
+  font-size: 11.5px;
+  color: var(--nz-text-soft);
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
 }
 
 .lead-drawer-collapsible {

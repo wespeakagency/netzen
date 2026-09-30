@@ -843,3 +843,63 @@ function htmlTrackError_(msg) {
     + '</div></body></html>';
   return HtmlService.createHtmlOutput(html).setTitle("Netzen - Error");
 }
+
+// ============================================================
+// TOUCH EVENTS — historial de actividad de un lead para el dashboard
+// Endpoint GET publico: ?action=touchEvents&lead_id=XXX
+// Devuelve los ultimos 20 eventos de 02_TOUCH_EVENTS filtrados por lead_id.
+// ============================================================
+
+const TOUCH_EVENTS_MAX = 20;
+
+function handleTouchEvents_(e) {
+  var leadId = String((e.parameter && e.parameter.lead_id) || "").trim();
+  if (!leadId) return jsonResponse({ ok: false, error: "lead_id requerido", events: [] });
+
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("02_TOUCH_EVENTS");
+  // Si la hoja no existe aun (nunca hubo un touch event), devolver array vacio.
+  if (!sheet) return jsonResponse({ ok: true, events: [] });
+
+  var values = sheet.getDataRange().getValues();
+  if (values.length <= 1) return jsonResponse({ ok: true, events: [] });
+
+  var headers = values[0];
+  var idx = {
+    event_id: headers.indexOf("event_id"),
+    event_at: headers.indexOf("event_at"),
+    lead_id: headers.indexOf("lead_id"),
+    channel: headers.indexOf("channel"),
+    source: headers.indexOf("source"),
+    previous_stage: headers.indexOf("previous_stage"),
+    stage_advanced: headers.indexOf("stage_advanced"),
+  };
+  if (idx.lead_id === -1) return jsonResponse({ ok: false, error: "schema invalido", events: [] });
+
+  var events = [];
+  for (var i = 1; i < values.length; i++) {
+    if (String(values[i][idx.lead_id]) !== leadId) continue;
+    events.push({
+      event_id: idx.event_id !== -1 ? String(values[i][idx.event_id] || "") : "",
+      event_at: idx.event_at !== -1 ? toIsoDate_(values[i][idx.event_at]) : "",
+      channel: idx.channel !== -1 ? String(values[i][idx.channel] || "") : "",
+      source: idx.source !== -1 ? String(values[i][idx.source] || "") : "",
+      previous_stage: idx.previous_stage !== -1 ? String(values[i][idx.previous_stage] || "") : "",
+      stage_advanced: idx.stage_advanced !== -1 ? !!values[i][idx.stage_advanced] : false,
+    });
+  }
+
+  // Sort desc por event_at (mas reciente primero), cap a 20.
+  events.sort(function (a, b) { return (b.event_at || "").localeCompare(a.event_at || ""); });
+  if (events.length > TOUCH_EVENTS_MAX) events = events.slice(0, TOUCH_EVENTS_MAX);
+
+  return jsonResponse({ ok: true, events: events });
+}
+
+function toIsoDate_(v) {
+  if (v instanceof Date) return v.toISOString();
+  if (!v) return "";
+  try {
+    var d = new Date(v);
+    return isNaN(d.getTime()) ? String(v) : d.toISOString();
+  } catch (e) { return String(v); }
+}
