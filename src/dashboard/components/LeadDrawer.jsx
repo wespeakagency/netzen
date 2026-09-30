@@ -291,7 +291,6 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onEditL
                 >
                   <span className="lead-drawer-score-medallion-label">Score</span>
                   <span className="lead-drawer-score-medallion-num">{lead.score_priority}</span>
-                  <span className="lead-drawer-score-medallion-unit">/100</span>
                 </button>
                 {scoringPopoverOpen && (
                   <ScoringPeekPopover
@@ -314,16 +313,21 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onEditL
                 {STAGE_LABELS[lead.lifecycle_stage] || lead.lifecycle_stage}
               </button>
             )}
-            {aging && (
-              <span
-                className={`lead-drawer-aging-pill lead-drawer-aging-pill--${aging.tier}`}
-                title={`Creado ${formatDate(lead.created_at)}`}
-              >
-                {aging.label}
+            {(aging || lead.route_code) && (
+              <span className="lead-drawer-meta-line">
+                {aging && (
+                  <span
+                    className={`lead-drawer-meta-line-aging lead-drawer-meta-line-aging--${aging.tier}`}
+                    title={`Creado ${formatDate(lead.created_at)}`}
+                  >
+                    {aging.label}
+                  </span>
+                )}
+                {aging && lead.route_code && <span className="lead-drawer-meta-line-dot" aria-hidden="true" />}
+                {lead.route_code && (
+                  <span className="lead-drawer-meta-line-route">Ruta {lead.route_code}</span>
+                )}
               </span>
-            )}
-            {lead.route_code && (
-              <span className="lead-drawer-route-pill">Ruta {lead.route_code}</span>
             )}
           </div>
         </header>
@@ -430,12 +434,28 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onEditL
           )}
 
           <Section title="Datos del prospecto">
-            <Field label="Modelo" value={lead.business_model} />
-            <Field label="Tamaño de la red" value={lead.network_size} />
-            <Field
-              label="Situación"
-              value={SITUACION_LABELS[lead.situacion] || lead.situacion}
-            />
+            <div className="lead-drawer-datacards">
+              {lead.business_model && (
+                <div className="lead-drawer-datacard">
+                  <span className="lead-drawer-datacard-label">Modelo</span>
+                  <span className="lead-drawer-datacard-value">{lead.business_model}</span>
+                </div>
+              )}
+              {lead.network_size && (
+                <div className="lead-drawer-datacard">
+                  <span className="lead-drawer-datacard-label">Tamaño de la red</span>
+                  <span className="lead-drawer-datacard-value">{lead.network_size}</span>
+                </div>
+              )}
+              {(SITUACION_LABELS[lead.situacion] || lead.situacion) && (
+                <div className="lead-drawer-datacard lead-drawer-datacard--wide">
+                  <span className="lead-drawer-datacard-label">Situación</span>
+                  <span className="lead-drawer-datacard-value">
+                    {SITUACION_LABELS[lead.situacion] || lead.situacion}
+                  </span>
+                </div>
+              )}
+            </div>
           </Section>
           {/* Rol, presupuesto, ventana y recursos ya viven en la tab "Respuestas" del "¿Por qué este score?"
               con más contexto (score 0-3 + eje al que aportan). Eliminados de acá para evitar duplicación. */}
