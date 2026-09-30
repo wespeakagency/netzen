@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import isotype from "../../assets/netzen-isotipo-red.svg";
 import { DASHBOARD_PASSWORD } from "../../lib/env.js";
 
 const STORAGE_KEY = "netzen_dashboard_auth";
@@ -29,7 +30,7 @@ export function PasswordGate({ onSuccess }) {
     setError("");
 
     if (attempts >= 5) {
-      setError("Demasiados intentos fallidos. Recargá la página para intentar de nuevo.");
+      setError("Demasiados intentos fallidos. Recarga la página para intentar de nuevo.");
       return;
     }
 
@@ -49,45 +50,61 @@ export function PasswordGate({ onSuccess }) {
 
   return (
     <div className="gate-shell">
-      <div className="gate-card">
-        <div className="gate-brand">
-          <span className="brand-red">Netzen</span>
-        </div>
-        <h1 className="gate-title">Dashboard interno</h1>
-        <p className="gate-subtitle">
-          Acceso restringido. Ingresá la contraseña para ver el backlog de leads.
-        </p>
+      <div className="gate-panel">
+        <section className="gate-brand" aria-label="Netzen dashboard interno">
+          <img src={isotype} alt="" className="gate-isotype" aria-hidden="true" />
+          <p className="gate-kicker">Acceso seguro</p>
+          <h1 className="gate-title">
+            <span className="brand-red">Netzen</span> Dashboard interno
+          </h1>
+          <p className="gate-subtitle">
+            Acceso restringido. Ingresa la contraseña para ver el backlog de leads.
+          </p>
+        </section>
 
-        <form onSubmit={handleSubmit} className="gate-form">
-          <label htmlFor="password" className="gate-label">
-            Contraseña
-          </label>
-          <input
-            id="password"
-            type="password"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            autoFocus
-            autoComplete="current-password"
-            className="input-text gate-input"
-            placeholder="Escribí la contraseña..."
-            disabled={attempts >= 5}
-          />
+        <section className="gate-card" aria-labelledby="gate-form-title">
+          <div className="gate-card-header">
+            <h2 id="gate-form-title" className="gate-form-title">
+              Ingresa la contraseña
+            </h2>
+            <p className="gate-form-copy">Usa la clave interna del equipo para continuar.</p>
+          </div>
 
-          {error && <div className="gate-error">{error}</div>}
+          <form onSubmit={handleSubmit} className="gate-form">
+            <label htmlFor="gate-password" className="gate-label">
+              Contraseña
+            </label>
+            <input
+              id="gate-password"
+              type="password"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              autoFocus
+              autoComplete="current-password"
+              className="input-text gate-input"
+              placeholder="Escribe la contraseña..."
+              disabled={attempts >= 5}
+            />
 
-          <button
-            type="submit"
-            className="btn btn-primary gate-submit"
-            disabled={!value || attempts >= 5}
-          >
-            Entrar
-          </button>
-        </form>
+            {error && (
+              <div className="gate-error" aria-live="polite">
+                {error}
+              </div>
+            )}
 
-        <div className="gate-footer">
-          Prueba interna · No es auth de producción
-        </div>
+            <button
+              type="submit"
+              className="btn btn-primary gate-submit"
+              disabled={!value || attempts >= 5}
+            >
+              Entrar
+            </button>
+          </form>
+
+          <div className="gate-footer">
+            Ambiente de prueba · No es autenticación de producción
+          </div>
+        </section>
       </div>
     </div>
   );
