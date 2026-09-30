@@ -530,10 +530,13 @@ function sendLeadNotification_(leadId, formType, fields, scoring, meta) {
   template.recursos = fields.implementation_readiness || "-";
   template.tipoFormulario = traducirTipoFormulario_(formType);
   template.fecha = new Date().toLocaleString("es-MX", { timeZone: "America/Mexico_City" });
-  // Links trackeados: pasan por doGet(action=trackContact), avanzan lifecycle_stage a "contactado" (idempotente)
-  // y redirigen al destino real (WhatsApp / mailto). Si TRACKING_SECRET no esta seteado, cae al link directo.
-  template.whatsappLink = buildTrackingUrl_(leadId, "whatsapp") || armarLinkWhatsApp_(fields.whatsapp, fields.nombre);
-  template.emailLink = buildTrackingUrl_(leadId, "email") || armarLinkEmail_(fields.email, fields.nombre);
+  // WhatsApp y Email: links DIRECTOS (wa.me / mailto). Sin redirect por Apps Script.
+  // El tracking del touch se hace via tracking pixel (ver template.trackingPixelUrl):
+  // cuando Irving abre el email, el cliente carga la imagen 1x1 -> se dispara handleTrackContact_
+  // con channel="email_opened", que avanza lifecycle_stage nuevo->contactado y loguea el touch.
+  template.whatsappLink = armarLinkWhatsApp_(fields.whatsapp, fields.nombre);
+  template.emailLink = armarLinkEmail_(fields.email, fields.nombre);
+  template.trackingPixelUrl = buildTrackingPixelUrl_(leadId);
 
   try {
     template.sheetUrl = SpreadsheetApp.getActiveSpreadsheet().getUrl();
@@ -550,7 +553,9 @@ function sendLeadNotification_(leadId, formType, fields, scoring, meta) {
 
   var html = template.evaluate().getContent();
 
-  var asunto = "Nuevo lead en Netzen - " + (fields.empresa || "Sin empresa") + " - " + (fields.nombre || "Sin nombre");
+  // Subject unico por lead (con leadId) para evitar que Gmail agrupe emails "iguales" en threads
+  // y recorte el contenido con "[Mensaje recortado]", lo que impide que el tracking pixel se cargue.
+  var asunto = "Nuevo lead #" + String(leadId).slice(0, 6) + " · " + (fields.empresa || "Sin empresa") + " · " + (fields.nombre || "Sin nombre");
 
   var bodyPlano = "";
   bodyPlano += "NETZEN - Nuevo lead recibido\n\n";
@@ -665,67 +670,143 @@ function buildTrackingUrl_(leadId, channel) {
   return base + "?action=trackContact&lead_id=" + encodeURIComponent(leadId) + "&channel=" + channel + "&t=" + token;
 }
 
+// URL del pixel de tracking (1x1 invisible) que se embebe en el email.
+// Cuando el cliente de correo abre el email, carga la imagen -> dispara el tracker.
+function buildTrackingPixelUrl_(leadId) {
+  return buildTrackingUrl_(leadId, "email_opened");
+}
+
 function handleTrackContact_(e) {
   var leadId = String((e.parameter && e.parameter.lead_id) || "").trim();
   var channel = String((e.parameter && e.parameter.channel) || "").trim();
   var token = String((e.parameter && e.parameter.t) || "").trim();
 
-  if (!leadId || (channel !== "whatsapp" && channel !== "email") || !token) {
-    return htmlTrackError_("Link invalido.");
+  // Canales soportados:
+  // - "email_opened": pixel invisible que se dispara al abrir el email de notificacion.
+  //   Retorna respuesta liviana (no HTML) porque el cliente de correo espera una imagen.
+  // - "whatsapp": legacy, redirect wrapper (mantiene compatibilidad si algun link viejo lo usa).
+  var isPixel = channel === "email_opened";
+  if (!leadId || (channel !== "email_opened" && channel !== "whatsapp") || !token) {
+    return isPixel ? pixelResponse_() : htmlTrackError_("Link invalido.");
   }
   var expected = signTrack_(leadId, channel);
-  if (!expected) return htmlTrackError_("El servidor no tiene TRACKING_SECRET configurado.");
-  if (token !== expected) return htmlTrackError_("Link invalido o adulterado.");
+  if (!expected) return isPixel ? pixelResponse_() : htmlTrackError_("El servidor no tiene TRACKING_SECRET configurado.");
+  if (token !== expected) return isPixel ? pixelResponse_() : htmlTrackError_("Link invalido o adulterado.");
 
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
-  if (!sheet) return htmlTrackError_("Hoja de leads no encontrada.");
+  if (!sheet) return isPixel ? pixelResponse_() : htmlTrackError_("Hoja de leads no encontrada.");
 
-  var values = sheet.getDataRange().getValues();
-  if (values.length <= 1) return htmlTrackError_("No hay leads registrados.");
-
-  var headers = values[0];
-  var idColIdx = headers.indexOf("lead_id");
-  var stageColIdx = headers.indexOf("lifecycle_stage");
-  var whatsappColIdx = headers.indexOf("whatsapp");
-  var emailColIdx = headers.indexOf("work_email");
-  var nombreColIdx = headers.indexOf("full_name");
-  var touchColIdx = headers.indexOf("last_touch_at");
-  if (idColIdx === -1 || stageColIdx === -1) return htmlTrackError_("Columnas requeridas no encontradas.");
-
-  var destination = "";
-  var found = false;
-  for (var i = 1; i < values.length; i++) {
-    if (String(values[i][idColIdx]) === leadId) {
-      found = true;
-      var currentStage = String(values[i][stageColIdx] || "").trim();
-      // Idempotente: solo avanza desde "nuevo" o vacio. No pisa estados posteriores.
-      if (currentStage === "" || currentStage === "nuevo") {
-        sheet.getRange(i + 1, stageColIdx + 1).setValue("contactado");
-        if (touchColIdx !== -1) sheet.getRange(i + 1, touchColIdx + 1).setValue(new Date());
-      }
-      var whatsapp = whatsappColIdx !== -1 ? String(values[i][whatsappColIdx] || "") : "";
-      var email = emailColIdx !== -1 ? String(values[i][emailColIdx] || "") : "";
-      var nombre = nombreColIdx !== -1 ? String(values[i][nombreColIdx] || "") : "";
-      destination = channel === "whatsapp"
-        ? armarLinkWhatsApp_(whatsapp, nombre)
-        : armarLinkEmail_(email, nombre);
-      break;
-    }
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(15000); } catch (lockErr) {
+    return isPixel ? pixelResponse_() : htmlTrackError_("Sistema ocupado, intentalo en unos segundos.");
   }
 
-  if (!found) return htmlTrackError_("Lead no encontrado.");
-  if (!destination) return htmlTrackError_("No hay " + (channel === "whatsapp" ? "WhatsApp" : "email") + " registrado para este lead.");
+  try {
+    var values = sheet.getDataRange().getValues();
+    if (values.length <= 1) return isPixel ? pixelResponse_() : htmlTrackError_("No hay leads registrados.");
 
-  return htmlTrackRedirect_(destination, channel);
+    var headers = values[0];
+    var idColIdx = headers.indexOf("lead_id");
+    var stageColIdx = headers.indexOf("lifecycle_stage");
+    var whatsappColIdx = headers.indexOf("whatsapp");
+    var nombreColIdx = headers.indexOf("full_name");
+    var touchColIdx = headers.indexOf("last_touch_at");
+    if (idColIdx === -1 || stageColIdx === -1) {
+      return isPixel ? pixelResponse_() : htmlTrackError_("Columnas requeridas no encontradas.");
+    }
+
+    var destination = "";
+    var found = false;
+    var previousStage = "";
+    var stageAdvanced = false;
+
+    for (var i = 1; i < values.length; i++) {
+      if (String(values[i][idColIdx]) === leadId) {
+        found = true;
+        previousStage = String(values[i][stageColIdx] || "").trim();
+        // Idempotente: solo avanza desde "nuevo" o vacio. No pisa estados posteriores.
+        if (previousStage === "" || previousStage === "nuevo") {
+          sheet.getRange(i + 1, stageColIdx + 1).setValue("contactado");
+          stageAdvanced = true;
+        }
+        if (touchColIdx !== -1) sheet.getRange(i + 1, touchColIdx + 1).setValue(new Date());
+        if (!isPixel) {
+          var whatsapp = whatsappColIdx !== -1 ? String(values[i][whatsappColIdx] || "") : "";
+          var nombre = nombreColIdx !== -1 ? String(values[i][nombreColIdx] || "") : "";
+          destination = armarLinkWhatsApp_(whatsapp, nombre);
+        }
+        SpreadsheetApp.flush();
+        break;
+      }
+    }
+
+    if (!found) return isPixel ? pixelResponse_() : htmlTrackError_("Lead no encontrado.");
+
+    // Log del touch event en hoja separada (best-effort, no bloquea la respuesta si falla)
+    try {
+      logTouchEvent_({
+        leadId: leadId,
+        channel: channel,
+        source: isPixel ? "email_pixel" : "email_notification",
+        previousStage: previousStage,
+        stageAdvanced: stageAdvanced,
+        userAgent: String((e.parameter && e.parameter.ua) || ""),
+      });
+    } catch (logErr) {
+      Logger.log("Error logueando touch event: " + logErr);
+    }
+
+    if (isPixel) return pixelResponse_();
+    if (!destination) return htmlTrackError_("No hay WhatsApp registrado para este lead.");
+    return htmlTrackRedirect_(destination, channel);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// Respuesta liviana para el tracking pixel. Apps Script ContentService no soporta MIME
+// de imagen directamente, pero el <img> del email tiene display:none, asi que el cliente
+// nunca renderiza la respuesta. Lo importante es que el GET se ejecute (ya se ejecuto).
+function pixelResponse_() {
+  return ContentService.createTextOutput("").setMimeType(ContentService.MimeType.TEXT);
+}
+
+// Hoja 02_TOUCH_EVENTS con columnas: event_id, event_at, lead_id, channel, source,
+// previous_stage, stage_advanced, user_agent. Se crea vacia al primer uso si no existe.
+function logTouchEvent_(evt) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("02_TOUCH_EVENTS");
+  if (!sheet) {
+    sheet = ss.insertSheet("02_TOUCH_EVENTS");
+    sheet.appendRow([
+      "event_id", "event_at", "lead_id", "channel", "source",
+      "previous_stage", "stage_advanced", "user_agent"
+    ]);
+    sheet.setFrozenRows(1);
+  }
+  sheet.appendRow([
+    Utilities.getUuid().slice(0, 12),
+    new Date(),
+    String(evt.leadId || ""),
+    String(evt.channel || ""),
+    String(evt.source || ""),
+    String(evt.previousStage || ""),
+    !!evt.stageAdvanced,
+    String(evt.userAgent || "").slice(0, 500),
+  ]);
 }
 
 function htmlTrackRedirect_(destination, channel) {
   var label = channel === "whatsapp" ? "WhatsApp" : "tu cliente de correo";
   var safeDest = String(destination).replace(/"/g, "&quot;");
+  // Apps Script sirve el HTML dentro de un iframe cross-origin (script.googleusercontent.com).
+  // wa.me y muchos otros destinos rechazan carga en iframe (X-Frame-Options).
+  // Solucion: forzar el redirect en la ventana top con target="_top" + window.top.location.
   var html = ''
     + '<!doctype html><html lang="es"><head><meta charset="utf-8">'
     + '<meta name="viewport" content="width=device-width,initial-scale=1">'
     + '<title>Abriendo ' + label + '...</title>'
+    + '<base target="_top">'
     + '<style>body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#f6f6f6;color:#0b1220;'
     + 'margin:0;padding:40px 20px;text-align:center}.card{max-width:420px;margin:60px auto;background:#fff;'
     + 'padding:32px 24px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.08)}h1{font-size:20px;margin:0 0 12px;color:#AA0000}'
@@ -733,10 +814,14 @@ function htmlTrackRedirect_(destination, channel) {
     + 'background:#AA0000;color:#fff;text-decoration:none;border-radius:8px;font-weight:600}</style></head><body>'
     + '<div class="card"><h1>Abriendo ' + label + '...</h1>'
     + '<p>Si no abre en unos segundos, hace click en el boton:</p>'
-    + '<a class="btn" href="' + safeDest + '">Continuar</a>'
+    + '<a class="btn" href="' + safeDest + '" target="_top" rel="noopener">Continuar</a>'
     + '<p style="font-size:12px;color:#6b7280;margin-top:24px">Estado del lead actualizado a <strong>contactado</strong>.</p>'
     + '</div>'
-    + '<script>window.location.replace(' + JSON.stringify(destination) + ');</script>'
+    + '<script>'
+    + 'var dest=' + JSON.stringify(destination) + ';'
+    + 'try{(window.top||window).location.replace(dest);}'
+    + 'catch(e){window.location.replace(dest);}'
+    + '</script>'
     + '</body></html>';
   return HtmlService.createHtmlOutput(html)
     .setTitle("Abriendo " + label + "...")
