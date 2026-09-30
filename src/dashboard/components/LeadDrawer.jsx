@@ -813,7 +813,7 @@ function TouchTimeline({ events, status }) {
         return (
           <li key={e.event_id || `${e.event_at}-${e.channel}`} className="lead-drawer-timeline-item">
             <span className={`lead-drawer-timeline-icon lead-drawer-timeline-icon--${meta.tone}`}>
-              <Icon size={12} />
+              <Icon size={16} strokeWidth={2} />
             </span>
             <div className="lead-drawer-timeline-body">
               <div className="lead-drawer-timeline-title">{meta.title}</div>
@@ -1116,6 +1116,11 @@ function PipelineStepper({ current, onSelect, disabled }) {
     : current === "cerrado_perdido" ? "perdido"
     : null;
 
+  // El outcome selector solo aparece si el lead llegó a Propuesta o ya está Cerrado.
+  // Antes de eso, cerrar el lead sin haber presentado propuesta no tiene sentido operativo.
+  const propuestaIdx = PIPELINE_STAGES.findIndex((s) => s.key === "propuesta");
+  const showOutcome = isClosed || currentIdx >= propuestaIdx;
+
   const handleClick = (stageKey) => {
     if (disabled || !onSelect) return;
     onSelect(stageKey);
@@ -1155,33 +1160,35 @@ function PipelineStepper({ current, onSelect, disabled }) {
         })}
       </div>
 
-      <div className={`pipeline-outcome ${isClosed ? "pipeline-outcome--closed" : ""}`}>
-        <span className="pipeline-outcome-label">
-          {isClosed ? "Cerrado como" : "Cerrar como"}
-        </span>
-        <div className="pipeline-outcome-choices" role="group" aria-label="Outcome de cierre">
-          <button
-            type="button"
-            className={`pipeline-outcome-btn pipeline-outcome-btn--ganado ${outcome === "ganado" ? "is-active" : ""}`}
-            onClick={() => handleClick("cerrado_ganado")}
-            disabled={disabled || outcome === "ganado"}
-            aria-pressed={outcome === "ganado"}
-          >
-            <span className="pipeline-outcome-dot" aria-hidden="true" />
-            <span>Ganado</span>
-          </button>
-          <button
-            type="button"
-            className={`pipeline-outcome-btn pipeline-outcome-btn--perdido ${outcome === "perdido" ? "is-active" : ""}`}
-            onClick={() => handleClick("cerrado_perdido")}
-            disabled={disabled || outcome === "perdido"}
-            aria-pressed={outcome === "perdido"}
-          >
-            <span className="pipeline-outcome-dot" aria-hidden="true" />
-            <span>Perdido</span>
-          </button>
+      {showOutcome && (
+        <div className={`pipeline-outcome ${isClosed ? "pipeline-outcome--closed" : ""}`}>
+          <span className="pipeline-outcome-label">
+            {isClosed ? "Cerrado como" : "Cerrar como"}
+          </span>
+          <div className="pipeline-outcome-choices" role="group" aria-label="Outcome de cierre">
+            <button
+              type="button"
+              className={`pipeline-outcome-btn pipeline-outcome-btn--ganado ${outcome === "ganado" ? "is-active" : ""}`}
+              onClick={() => handleClick("cerrado_ganado")}
+              disabled={disabled || outcome === "ganado"}
+              aria-pressed={outcome === "ganado"}
+            >
+              <span className="pipeline-outcome-dot" aria-hidden="true" />
+              <span>Ganado</span>
+            </button>
+            <button
+              type="button"
+              className={`pipeline-outcome-btn pipeline-outcome-btn--perdido ${outcome === "perdido" ? "is-active" : ""}`}
+              onClick={() => handleClick("cerrado_perdido")}
+              disabled={disabled || outcome === "perdido"}
+              aria-pressed={outcome === "perdido"}
+            >
+              <span className="pipeline-outcome-dot" aria-hidden="true" />
+              <span>Perdido</span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

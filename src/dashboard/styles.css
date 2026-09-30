@@ -3569,25 +3569,31 @@ button.pipeline-step:disabled {
 
 .lead-drawer-timeline-item {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: flex-start;
+  position: relative;
+  padding-left: 4px;
+}
+.lead-drawer-timeline-item + .lead-drawer-timeline-item {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--nz-border);
 }
 
 .lead-drawer-timeline-icon {
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
+  width: 18px;
+  height: 18px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #ffffff;
-  margin-top: 1px;
+  background: transparent;
+  margin-top: 2px;
 }
-.lead-drawer-timeline-icon--email { background: #b3261e; }
-.lead-drawer-timeline-icon--whatsapp { background: #25d366; }
-.lead-drawer-timeline-icon--manual { background: #6366f1; }
-.lead-drawer-timeline-icon--neutral { background: var(--nz-text-muted); }
+.lead-drawer-timeline-icon--email { color: #b3261e; }
+.lead-drawer-timeline-icon--whatsapp { color: #15803d; }
+.lead-drawer-timeline-icon--manual { color: #4f46e5; }
+.lead-drawer-timeline-icon--neutral { color: var(--nz-text-muted); }
 
 .lead-drawer-timeline-body {
   flex: 1;
