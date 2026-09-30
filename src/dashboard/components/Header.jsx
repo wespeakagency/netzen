@@ -7,14 +7,30 @@ export function Header({ count, lastUpdated, onRefresh, refreshing, onLogout, on
   return (
     <header className="dashboard-header">
       <div className="dashboard-brand">
-        <span className="brand-red">Netzen</span>
-        <span className="brand-separator">·</span>
-        <span className="brand-title">Dashboard interno</span>
+        <span className="dashboard-brand-accent" aria-hidden="true" />
+        <div className="dashboard-brand-text">
+          <p className="dashboard-brand-kicker">Panel operativo</p>
+          <p className="dashboard-brand-line">
+            <span className="brand-red">Netzen</span>
+            <span className="brand-separator">·</span>
+            <span className="brand-title">Dashboard interno</span>
+          </p>
+        </div>
       </div>
       <div className="dashboard-actions">
         <div className="dashboard-meta">
-          {count > 0 && <span className="meta-count">{count} leads</span>}
-          {timeAgo && <span className="meta-time">Actualizado {timeAgo}</span>}
+          {count > 0 && (
+            <span className="meta-count">
+              <span className="meta-count-num">{count}</span>
+              <span className="meta-count-label">leads</span>
+            </span>
+          )}
+          {timeAgo && (
+            <span className="meta-time">
+              <span className="meta-time-eyebrow">Sync</span>
+              <span>{timeAgo}</span>
+            </span>
+          )}
         </div>
         {onExport && (
           <button
