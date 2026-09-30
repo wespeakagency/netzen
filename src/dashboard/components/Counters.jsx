@@ -1,38 +1,62 @@
 import React from "react";
-import { Users, AlertCircle, Zap, Timer, Clock, HelpCircle } from "lucide-react";
+import { Users, AlertOctagon, Flame, TrendingUp, CheckCircle } from "lucide-react";
+import {
+  isUncontacted24h,
+  isHot,
+  isPipelineActive,
+  isClosedRecent,
+} from "./Filters.jsx";
 
-const ICON_MAP = {
-  total: Users,
-  p1: AlertCircle,
-  p2: Zap,
-  p3: Timer,
-  p4: Clock,
-  pending: HelpCircle,
-};
+// Preset "clear" (todos los filtros vacios) para el card Total.
+const CLEAR_PRESET = {};
 
-export function Counters({ leads }) {
+export function Counters({ leads, onSelectPreset }) {
   const total = leads.length;
-  const p1 = leads.filter((l) => l.category === "P1").length;
-  const p2 = leads.filter((l) => l.category === "P2").length;
-  const p3 = leads.filter((l) => l.category === "P3").length;
-  const p4 = leads.filter((l) => l.category === "P4").length;
-  const pending = leads.filter((l) => l.category === "PENDIENTE").length;
+  const now = Date.now();
+
+  const uncontacted = leads.filter((l) => isUncontacted24h(l, now)).length;
+  const hot = leads.filter(isHot).length;
+  const active = leads.filter(isPipelineActive).length;
+  const closedRecent = leads.filter((l) => isClosedRecent(l, now)).length;
 
   const cards = [
-    { key: "total", label: "Total leads", value: total, tone: "neutral" },
-    { key: "p1", label: "P1 · Urgente", value: p1, tone: "p1", pct: rawPct(p1, total) },
-    { key: "p2", label: "P2 · MQL", value: p2, tone: "p2", pct: rawPct(p2, total) },
-    { key: "p3", label: "P3 · Nurture", value: p3, tone: "p3", pct: rawPct(p3, total) },
-    { key: "p4", label: "P4 · Reserva", value: p4, tone: "p4", pct: rawPct(p4, total) },
-    { key: "pending", label: "Pendiente", value: pending, tone: "pending", pct: rawPct(pending, total) },
+    {
+      key: "total", label: "Total leads", value: total, tone: "neutral",
+      icon: Users, preset: CLEAR_PRESET,
+    },
+    {
+      key: "uncontacted", label: "Sin contactar >24h", value: uncontacted, tone: "alert",
+      icon: AlertOctagon, pct: rawPct(uncontacted, total),
+      preset: { uncontacted24h: true },
+    },
+    {
+      key: "hot", label: "Hot · P1 + P2", value: hot, tone: "hot",
+      icon: Flame, pct: rawPct(hot, total),
+      preset: { categories: ["P1", "P2"] },
+    },
+    {
+      key: "active", label: "En pipeline activo", value: active, tone: "active",
+      icon: TrendingUp, pct: rawPct(active, total),
+      preset: { pipelineActive: true },
+    },
+    {
+      key: "closed", label: "Cerrados últimos 30d", value: closedRecent, tone: "closed",
+      icon: CheckCircle, pct: rawPct(closedRecent, total),
+      preset: { closedRecent: true },
+    },
   ];
+
+  const isClickable = typeof onSelectPreset === "function";
 
   return (
     <section className="counters">
       {cards.map((c) => {
-        const Icon = ICON_MAP[c.key];
-        return (
-          <div key={c.key} className={`counter counter-${c.tone}`}>
+        const Icon = c.icon;
+        const commonProps = {
+          className: `counter counter-${c.tone}${isClickable ? " counter--clickable" : ""}`,
+        };
+        const content = (
+          <>
             <div className="counter-head">
               <div className="counter-label">{c.label}</div>
               {Icon && (
@@ -44,18 +68,29 @@ export function Counters({ leads }) {
             <div className="counter-value">{c.value}</div>
             {c.pct != null && (
               <div className="counter-progress">
-                <div
-                  className="counter-progress-fill"
-                  style={{ width: `${c.pct}%` }}
-                />
+                <div className="counter-progress-fill" style={{ width: `${c.pct}%` }} />
               </div>
             )}
             {c.pct != null && (
-              <div className="counter-sub">
-                {c.pct}% del total
-              </div>
+              <div className="counter-sub">{c.pct}% del total</div>
             )}
-          </div>
+          </>
+        );
+
+        if (!isClickable) {
+          return <div key={c.key} {...commonProps}>{content}</div>;
+        }
+
+        return (
+          <button
+            key={c.key}
+            type="button"
+            {...commonProps}
+            onClick={() => onSelectPreset(c.preset)}
+            aria-label={`Filtrar por ${c.label}`}
+          >
+            {content}
+          </button>
         );
       })}
     </section>

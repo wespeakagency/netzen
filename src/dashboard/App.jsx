@@ -14,6 +14,10 @@ const INITIAL_FILTERS = {
   stage: "",
   country: "",
   owner: "",
+  aging: "",
+  uncontacted24h: false,
+  pipelineActive: false,
+  closedRecent: false,
   dateFrom: "",
   dateTo: "",
 };
@@ -129,9 +133,17 @@ export function App() {
     filters.stage ||
     filters.country ||
     filters.owner ||
+    filters.aging ||
+    filters.uncontacted24h ||
+    filters.pipelineActive ||
+    filters.closedRecent ||
     filters.dateFrom ||
     filters.dateTo;
   const isFiltered = filteredLeads.length !== leads.length;
+
+  const applyCounterPreset = useCallback((preset) => {
+    setFilters({ ...INITIAL_FILTERS, ...(preset || {}) });
+  }, []);
 
   const handleExport = () => {
     if (!filteredLeads.length) return;
@@ -184,7 +196,7 @@ export function App() {
               </div>
             )}
 
-            <Counters leads={filteredLeads} />
+            <Counters leads={leads} onSelectPreset={applyCounterPreset} />
             <LeadsTable
               leads={filteredLeads}
               hasActiveFilters={!!hasActiveFilters}

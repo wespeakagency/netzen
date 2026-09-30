@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { AlertCircle, Zap, Timer, Clock, HelpCircle, Info, Eye, ChevronLeft, ChevronRight } from "lucide-react";
-import { LeadDrawer, STAGE_LABELS } from "./LeadDrawer.jsx";
+import { AlertCircle, Zap, Timer, Clock, HelpCircle, Info, ChevronLeft, ChevronRight } from "lucide-react";
+import { LeadDrawer, STAGE_LABELS, timeSince } from "./LeadDrawer.jsx";
 
 const PAGE_SIZE = 25;
 
@@ -10,6 +10,7 @@ const COLUMNS = [
   { key: "full_name", label: "Nombre", type: "text" },
   { key: "company_name", label: "Empresa", type: "text" },
   { key: "route_code", label: "Ruta", type: "route", width: "60px" },
+  { key: "activity", label: "Actividad", type: "activity", width: "110px" },
   { key: "lifecycle_stage", label: "Estado", type: "stage" },
   { key: "work_email", label: "Email", type: "text" },
   { key: "whatsapp", label: "WhatsApp", type: "text" },
@@ -140,7 +141,6 @@ export function LeadsTable({ leads, hasActiveFilters, onClearFilters, onUpdateLe
         <table className="leads-table">
           <thead>
             <tr>
-              <th className="col-context">Contexto</th>
               {COLUMNS.map((col) => (
                 <th
                   key={col.key}
@@ -176,22 +176,8 @@ export function LeadsTable({ leads, hasActiveFilters, onClearFilters, onUpdateLe
                   role="button"
                   aria-label={`Ver detalle de ${lead.full_name || lead.work_email || "lead"}`}
                 >
-                  <td className="cell-context">
-                    <button
-                      type="button"
-                      className="row-context-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openDrawerFor(lead);
-                      }}
-                      title="Ver contexto completo"
-                    >
-                      <Eye size={13} />
-                      Ver
-                    </button>
-                  </td>
                   {COLUMNS.map((col) => {
-                    const rawValue = lead[col.key];
+                    const rawValue = col.type === "activity" ? lead : lead[col.key];
                     const tooltip = getCellTooltip(rawValue, col.type);
                     return (
                       <td
@@ -254,6 +240,7 @@ function LeadCard({ lead, onClick }) {
     : "";
   const stageMod = lead.lifecycle_stage || "";
   const createdLabel = formatShortDate(lead.created_at);
+  const aging = timeSince(lead.created_at, lead.lifecycle_stage);
   const label = `Ver detalle de ${lead.full_name || lead.work_email || "lead"}`;
 
   return (
@@ -293,7 +280,12 @@ function LeadCard({ lead, onClick }) {
         {stageLabel && (
           <span className={`stage-tag stage-tag--${stageMod}`}>{stageLabel}</span>
         )}
-        {createdLabel && <span className="lead-card-date">{createdLabel}</span>}
+        <div className="lead-card-meta-right">
+          {aging && (
+            <span className={`cell-activity cell-activity--${aging.tier}`}>{aging.label}</span>
+          )}
+          {createdLabel && <span className="lead-card-date">{createdLabel}</span>}
+        </div>
       </div>
     </div>
   );
@@ -311,7 +303,7 @@ function formatShortDate(value) {
 }
 
 function renderCell(value, type) {
-  if (value == null || value === "") return <span className="cell-empty">—</span>;
+  if (value == null || value === "") return <span className="cell-empty">-</span>;
 
   if (type === "date") {
     try {
@@ -353,6 +345,13 @@ function renderCell(value, type) {
     return <span className="country-code">{toIsoCountry(value)}</span>;
   }
 
+  if (type === "activity") {
+    if (!value) return <span className="cell-empty">-</span>;
+    const aging = timeSince(value.created_at, value.lifecycle_stage);
+    if (!aging) return <span className="cell-empty">-</span>;
+    return <span className={`cell-activity cell-activity--${aging.tier}`}>{aging.label}</span>;
+  }
+
   return String(value);
 }
 
@@ -360,6 +359,12 @@ function getCellTooltip(value, type) {
   if (value == null || value === "") return "";
   if (type === "text") return String(value);
   if (type === "country") return String(value);
+  if (type === "activity" && value && value.created_at) {
+    try {
+      const d = new Date(value.created_at);
+      if (!isNaN(d)) return `Creado ${d.toLocaleString("es-MX")}`;
+    } catch { /* noop */ }
+  }
   return "";
 }
 
@@ -367,7 +372,7 @@ function Pagination({ currentPage, totalPages, rangeStart, rangeEnd, total, onPr
   return (
     <nav className="leads-pagination" aria-label="Paginación de leads">
       <div className="leads-pagination-info">
-        Mostrando <strong>{rangeStart}</strong>–<strong>{rangeEnd}</strong> de <strong>{total}</strong> leads
+        Mostrando <strong>{rangeStart}</strong> al <strong>{rangeEnd}</strong> de <strong>{total}</strong> leads
       </div>
       <div className="leads-pagination-controls">
         <button

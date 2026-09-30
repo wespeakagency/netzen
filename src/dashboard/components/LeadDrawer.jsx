@@ -1,6 +1,22 @@
 import React, { useEffect, useRef, useState } from "react";
-import { X, Mail, MessageCircle, ChevronDown, ChevronRight, Copy, Check, Edit3, Activity } from "lucide-react";
+import {
+  X, Mail, MessageCircle, ChevronDown, ChevronRight, Copy, Check, Edit3, Activity,
+  Users, Wallet, CalendarClock, Wrench, BarChart3, Sparkles, HelpCircle,
+} from "lucide-react";
 import { fetchTouchEvents } from "../api.js";
+import {
+  computeScoringBreakdown,
+  buildScoringNarrative,
+  buildScoringHighlight,
+  tierLabelForScore,
+  AXIS_LABELS,
+  DIMENSION_ICONS,
+  getFormType,
+} from "../scoring.js";
+
+const DIMENSION_ICON_MAP = {
+  Users, Wallet, CalendarClock, Wrench, BarChart3, Sparkles,
+};
 
 const SITUACION_LABELS = {
   A: "Apenas empieza / explorando",
@@ -16,13 +32,19 @@ export const STAGE_LABELS = {
   propuesta: "Propuesta",
   cerrado_ganado: "Cerrado, ganado",
   cerrado_perdido: "Cerrado, perdido",
+  // nurture queda como fallback de display para leads legacy pero no se ofrece como opción
+  // seleccionable (el label confunde y el pipeline lineal es más claro).
   nurture: "Interés futuro",
 };
+
+// Stages que aparecen como <option> en el dropdown de edición. Excluye "nurture" a propósito.
+const SELECTABLE_STAGES = ["nuevo", "contactado", "calificado", "propuesta", "cerrado_ganado", "cerrado_perdido"];
 
 export function LeadDrawer({ lead, onClose, onUpdateLead }) {
   const closeBtnRef = useRef(null);
   const [showAttribution, setShowAttribution] = useState(false);
   const [showTimeline, setShowTimeline] = useState(true);
+  const [showScoreExplain, setShowScoreExplain] = useState(true);
   const [phoneCopied, setPhoneCopied] = useState(false);
   const [stageStatus, setStageStatus] = useState("idle"); // idle | saving | error
   const [stageError, setStageError] = useState("");
@@ -37,6 +59,12 @@ export function LeadDrawer({ lead, onClose, onUpdateLead }) {
     try {
       await onUpdateLead({ leadId: lead.lead_id, field: "lifecycle_stage", value: newStage });
       setStageStatus("idle");
+      // Refetch touch events para reflejar el cambio manual en el timeline sin esperar refresh general.
+      if (lead.lead_id) {
+        fetchTouchEvents(lead.lead_id)
+          .then((data) => setTouchEvents(Array.isArray(data?.events) ? data.events : []))
+          .catch(() => { /* silencioso, el cambio de estado ya fue exitoso */ });
+      }
     } catch (err) {
       setStageStatus("error");
       setStageError(err.message || "No se pudo guardar");
@@ -218,17 +246,24 @@ export function LeadDrawer({ lead, onClose, onUpdateLead }) {
                 )}
               </div>
               <select
-                className="lead-drawer-stage-select lead-drawer-stage-select--wide"
+                className={`lead-drawer-stage-select lead-drawer-stage-select--wide lead-drawer-stage-select--${lead.lifecycle_stage || "nuevo"}`}
                 value={lead.lifecycle_stage || "nuevo"}
                 onChange={handleStageChange}
                 disabled={stageStatus === "saving"}
                 aria-label="Cambiar estado del lead"
               >
-                {Object.entries(STAGE_LABELS).map(([k, label]) => (
-                  <option key={k} value={k}>{label}</option>
+                {SELECTABLE_STAGES.map((k) => (
+                  <option key={k} value={k}>{STAGE_LABELS[k]}</option>
                 ))}
               </select>
+              <PipelineStepper current={lead.lifecycle_stage || "nuevo"} />
             </div>
+          )}
+
+          {lead.user_message && (
+            <Section title="Mensaje del prospecto">
+              <p className="lead-drawer-message">{lead.user_message}</p>
+            </Section>
           )}
 
           <Section title="Contexto de negocio">
@@ -249,13 +284,13 @@ export function LeadDrawer({ lead, onClose, onUpdateLead }) {
             <Field label="Recursos" value={lead.implementation_readiness} />
           </Section>
 
-          <ScoringBreakdown lead={lead} />
+          <ScoreExplain
+            lead={lead}
+            open={showScoreExplain}
+            onToggle={() => setShowScoreExplain((v) => !v)}
+          />
 
-          {lead.user_message && (
-            <Section title="Mensaje del prospecto">
-              <p className="lead-drawer-message">{lead.user_message}</p>
-            </Section>
-          )}
+          <ScoringBreakdown lead={lead} />
 
           <Section title="Metadata">
             <Field label="Creado" value={formatDate(lead.created_at)} />
@@ -399,7 +434,7 @@ function hasAttribution(lead) {
 
 // Retorna label relativo ("hace 2 horas") + tier de color segun edad y estado.
 // tier "cold" solo si es viejo Y el lead sigue en estado inicial (nuevo/vacio).
-function timeSince(dateValue, lifecycleStage) {
+export function timeSince(dateValue, lifecycleStage) {
   if (!dateValue) return null;
   const d = new Date(dateValue);
   if (isNaN(d.getTime())) return null;
@@ -427,18 +462,20 @@ function timeSince(dateValue, lifecycleStage) {
 
 function ScoringBreakdown({ lead }) {
   const dims = [
-    { key: "alignment", label: "Alignment", value: lead.score_alignment },
-    { key: "potential", label: "Potential", value: lead.score_potential },
-    { key: "intent", label: "Intent", value: lead.score_intent },
-    { key: "confidence", label: "Confidence", value: lead.score_confidence },
+    { key: "alignment", label: "Alineamiento", value: lead.score_alignment },
+    { key: "potential", label: "Potencial", value: lead.score_potential },
+    { key: "intent", label: "Intención", value: lead.score_intent },
+    { key: "confidence", label: "Confianza", value: lead.score_confidence },
   ].filter((d) => d.value != null && d.value !== "" && Number.isFinite(Number(d.value)));
 
   const priority = lead.score_priority;
   if (dims.length === 0 && (priority == null || priority === "")) return null;
 
   const priorityTier = getScoreTier(priority);
+  const priorityTierMeta = tierLabelForScore(priority);
   const confidence = Number(lead.score_confidence);
   const lowConfidence = Number.isFinite(confidence) && confidence < 60;
+  const highlight = buildScoringHighlight(lead);
 
   return (
     <section className="lead-drawer-section">
@@ -450,9 +487,17 @@ function ScoringBreakdown({ lead }) {
               <span className="lead-drawer-scoring-priority-num">{priority}</span>
               <span className="lead-drawer-scoring-priority-label">Prioridad</span>
             </div>
-            <p className="lead-drawer-scoring-formula">
-              50% Alignment · 35% Potential · 15% Intent
-            </p>
+            <div className="lead-drawer-scoring-header-body">
+              <div className={`lead-drawer-scoring-verdict lead-drawer-scoring-verdict--${priorityTierMeta.tier}`}>
+                {priorityTierMeta.label}
+              </div>
+              {highlight && (
+                <p className="lead-drawer-scoring-highlight">{highlight}</p>
+              )}
+              <p className="lead-drawer-scoring-formula">
+                50% Alineamiento · 35% Potencial · 15% Intención
+              </p>
+            </div>
           </div>
         )}
         {dims.length > 0 && (
@@ -460,12 +505,18 @@ function ScoringBreakdown({ lead }) {
             {dims.map((d) => {
               const num = Number(d.value);
               const tier = getScoreTier(num);
+              const tierMeta = tierLabelForScore(num, d.key);
               const width = Math.max(0, Math.min(100, num));
               return (
                 <div key={d.key} className="lead-drawer-score-bar">
                   <div className="lead-drawer-score-bar-head">
                     <span className="lead-drawer-score-bar-label">{d.label}</span>
-                    <span className="lead-drawer-score-bar-num">{num}</span>
+                    <div className="lead-drawer-score-bar-value">
+                      <span className={`lead-drawer-score-bar-tier lead-drawer-score-bar-tier--${tierMeta.tier}`}>
+                        {tierMeta.label}
+                      </span>
+                      <span className={`lead-drawer-score-bar-num lead-drawer-score-bar-num--${tier}`}>{num}</span>
+                    </div>
                   </div>
                   <div className="lead-drawer-score-bar-track">
                     <div
@@ -532,6 +583,254 @@ function TouchTimeline({ events, status }) {
   );
 }
 
+function ScoreExplain({ lead, open, onToggle }) {
+  const items = computeScoringBreakdown(lead);
+  const intent = Number(lead.score_intent);
+  const hasIntent = Number.isFinite(intent) && intent !== 0;
+  const formType = getFormType(lead);
+  const narrative = buildScoringNarrative(lead, items);
+  const [tab, setTab] = useState("why"); // "why" | "answers"
+
+  if (items.length === 0 && !hasIntent && !narrative) return null;
+
+  const hasWhy = !!narrative;
+  const hasAnswers = items.length > 0 || hasIntent;
+  const showTabs = hasWhy && hasAnswers;
+  const activeTab = !showTabs ? (hasWhy ? "why" : "answers") : tab;
+
+  return (
+    <section className="lead-drawer-section">
+      <button
+        type="button"
+        className="lead-drawer-collapsible"
+        onClick={onToggle}
+        aria-expanded={open}
+      >
+        {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        <span>¿Por qué este score?</span>
+      </button>
+      {open && (
+        <div className="lead-drawer-section-body">
+          {showTabs && (
+            <div className="lead-drawer-explain-tabs" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === "why"}
+                className={`lead-drawer-explain-tab ${activeTab === "why" ? "is-active" : ""}`}
+                onClick={() => setTab("why")}
+              >
+                Por qué
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === "answers"}
+                className={`lead-drawer-explain-tab ${activeTab === "answers" ? "is-active" : ""}`}
+                onClick={() => setTab("answers")}
+              >
+                Respuestas
+              </button>
+            </div>
+          )}
+
+          {activeTab === "why" && narrative && (
+            <div className={`lead-drawer-narrative lead-drawer-narrative--${narrative.tier}`}>
+              <p className="lead-drawer-narrative-opening">
+                {narrative.openingLead && <strong>{narrative.openingLead}</strong>}
+                {narrative.openingRest}
+              </p>
+
+              {narrative.strengths && narrative.strengths.length > 0 && (
+                <div className="lead-drawer-narrative-list lead-drawer-narrative-list--pos">
+                  <div className="lead-drawer-narrative-list-title">Fortalezas</div>
+                  <ul>
+                    {narrative.strengths.map((s, i) => (
+                      <li key={i}>{s}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {narrative.weaknesses && narrative.weaknesses.length > 0 && (
+                <div className="lead-drawer-narrative-list lead-drawer-narrative-list--neg">
+                  <div className="lead-drawer-narrative-list-title">A resolver</div>
+                  <ul>
+                    {narrative.weaknesses.map((w, i) => (
+                      <li key={i}>{w}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {narrative.action && (
+                <p className="lead-drawer-narrative-action">
+                  <span className="lead-drawer-narrative-action-label">Próximo paso</span>
+                  {narrative.action}
+                </p>
+              )}
+            </div>
+          )}
+
+          {activeTab === "answers" && (
+            <>
+              <ul className="lead-drawer-explain">
+                {items.map((it) => {
+                  const Icon = DIMENSION_ICON_MAP[DIMENSION_ICONS[it.dimension]] || HelpCircle;
+                  return (
+                    <li
+                      key={it.dimension}
+                      className={`lead-drawer-explain-item lead-drawer-explain-item--${it.axis}`}
+                    >
+                      <div className="lead-drawer-explain-head">
+                        <span className={`lead-drawer-explain-icon lead-drawer-explain-icon--${it.axis}`}>
+                          <Icon size={14} />
+                        </span>
+                        <span className="lead-drawer-explain-label">{it.label}</span>
+                        <span className={`lead-drawer-explain-axis-pill lead-drawer-explain-axis-pill--${it.axis}`}>
+                          {AXIS_LABELS[it.axis] || it.axis}
+                        </span>
+                      </div>
+                      <div className="lead-drawer-explain-answer">"{it.answer}"</div>
+                      <ScoreDots score={it.score} />
+                    </li>
+                  );
+                })}
+                {hasIntent && (
+                  <li className="lead-drawer-explain-item lead-drawer-explain-item--intent">
+                    <div className="lead-drawer-explain-head">
+                      <span className="lead-drawer-explain-icon lead-drawer-explain-icon--intent">
+                        <Sparkles size={14} />
+                      </span>
+                      <span className="lead-drawer-explain-label">Tipo de formulario</span>
+                      <span className="lead-drawer-explain-axis-pill lead-drawer-explain-axis-pill--intent">
+                        {AXIS_LABELS.intent}
+                      </span>
+                    </div>
+                    {formType && (
+                      <div className="lead-drawer-explain-answer">"{formType}"</div>
+                    )}
+                    <div className="lead-drawer-explain-intent-value">
+                      <span className="lead-drawer-explain-intent-num">{intent}</span>
+                      <span className="lead-drawer-explain-intent-unit">/ 100</span>
+                    </div>
+                  </li>
+                )}
+              </ul>
+              <p className="lead-drawer-explain-note">
+                Cada eje se calcula como promedio ponderado de sus dimensiones,
+                según los pesos configurados por ruta.
+              </p>
+            </>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ScoreDots({ score }) {
+  if (score == null) {
+    return (
+      <div className="lead-drawer-explain-dots lead-drawer-explain-dots--none">
+        <span className="lead-drawer-explain-dot-label">Sin clasificar</span>
+      </div>
+    );
+  }
+  const dots = [0, 1, 2].map((i) => i < score);
+  const tier = scoreClass(score);
+  return (
+    <div className={`lead-drawer-explain-dots lead-drawer-explain-dots--${tier}`}>
+      {dots.map((filled, i) => (
+        <span
+          key={i}
+          className={`lead-drawer-explain-dot ${filled ? "lead-drawer-explain-dot--filled" : ""}`}
+          aria-hidden="true"
+        />
+      ))}
+      <span className="lead-drawer-explain-dot-label">{score}/3</span>
+    </div>
+  );
+}
+
+function scoreClass(score) {
+  if (score == null) return "none";
+  if (score >= 3) return "high";
+  if (score >= 2) return "mid";
+  if (score >= 1) return "low";
+  return "cold";
+}
+
+// Etapas del pipeline lineal (nurture queda fuera, se muestra como side track).
+const PIPELINE_STAGES = [
+  { key: "nuevo", label: "Nuevo" },
+  { key: "contactado", label: "Contactado" },
+  { key: "calificado", label: "Calificado" },
+  { key: "propuesta", label: "Propuesta" },
+  { key: "closed", label: "Cerrado" },
+];
+
+function pipelineIndex(stage) {
+  if (stage === "cerrado_ganado" || stage === "cerrado_perdido") return 4;
+  const found = PIPELINE_STAGES.findIndex((s) => s.key === stage);
+  return found === -1 ? -1 : found;
+}
+
+function PipelineStepper({ current }) {
+  // Nurture no es parte del pipeline lineal, se rotula aparte para no confundir con progreso.
+  if (current === "nurture") {
+    return (
+      <div className="pipeline-stepper pipeline-stepper--offtrack">
+        <span className="pipeline-offtrack-dot" />
+        <span className="pipeline-offtrack-label">
+          Este lead está en <strong>Interés futuro</strong>, fuera del pipeline lineal.
+        </span>
+      </div>
+    );
+  }
+
+  const currentIdx = pipelineIndex(current);
+  const outcome = current === "cerrado_ganado" ? "ganado"
+    : current === "cerrado_perdido" ? "perdido"
+    : null;
+
+  return (
+    <div className="pipeline-stepper" role="list" aria-label="Progreso en el pipeline">
+      {PIPELINE_STAGES.map((stage, idx) => {
+        const isPast = idx < currentIdx;
+        const isCurrent = idx === currentIdx;
+        const isFuture = idx > currentIdx;
+        const state = isPast ? "past" : isCurrent ? "current" : "future";
+        const showOutcome = stage.key === "closed" && outcome && (isCurrent || isPast);
+        const label = showOutcome
+          ? (outcome === "ganado" ? "Ganado" : "Perdido")
+          : stage.label;
+        const outcomeMod = showOutcome ? ` pipeline-step--${outcome}` : "";
+
+        return (
+          <React.Fragment key={stage.key}>
+            <div
+              className={`pipeline-step pipeline-step--${state}${outcomeMod}`}
+              role="listitem"
+              aria-current={isCurrent ? "step" : undefined}
+              data-current-stage={isCurrent ? current : undefined}
+            >
+              <span className="pipeline-step-dot" />
+              <span className="pipeline-step-label">{label}</span>
+            </div>
+            {idx < PIPELINE_STAGES.length - 1 && (
+              <span
+                className={`pipeline-connector ${idx < currentIdx ? "pipeline-connector--past" : ""}`}
+                aria-hidden="true"
+              />
+            )}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
 function describeTouchEvent(evt) {
   const channel = String(evt.channel || "").toLowerCase();
   if (channel === "email_opened") {
@@ -541,7 +840,7 @@ function describeTouchEvent(evt) {
     return { icon: MessageCircle, tone: "whatsapp", title: "WhatsApp clickeado" };
   }
   if (channel === "manual" || channel === "dashboard") {
-    return { icon: Edit3, tone: "manual", title: "Actualización manual" };
+    return { icon: Edit3, tone: "manual", title: "Estado actualizado desde el dashboard" };
   }
   return { icon: Activity, tone: "neutral", title: channel || "Evento" };
 }

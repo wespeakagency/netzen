@@ -3,6 +3,59 @@ import React, { useMemo } from "react";
 const CATEGORIES = ["P1", "P2", "P3", "P4", "PENDIENTE", "NO_SCORABLE"];
 const ROUTES = ["A", "B", "C", "D", "E"];
 
+const EMPTY_FILTERS = {
+  search: "",
+  categories: [],
+  routes: [],
+  stage: "",
+  country: "",
+  owner: "",
+  aging: "",
+  uncontacted24h: false,
+  pipelineActive: false,
+  closedRecent: false,
+  dateFrom: "",
+  dateTo: "",
+};
+
+const QUICK_PRESETS = [
+  { key: "all", label: "Todos", preset: {} },
+  { key: "uncontacted", label: "Sin contactar", preset: { stage: "nuevo" } },
+  { key: "hot", label: "Hot", preset: { categories: ["P1", "P2"] } },
+  { key: "aging", label: "Sin actividad >7d", preset: { aging: ">7d" } },
+];
+
+function matchesPreset(filters, preset) {
+  if (preset.key === "all") return isEmptyFilters(filters);
+  const p = preset.preset;
+  if (p.stage != null && filters.stage !== p.stage) return false;
+  if (p.aging != null && filters.aging !== p.aging) return false;
+  if (p.categories != null) {
+    const set = new Set(p.categories);
+    const cur = new Set(filters.categories || []);
+    if (set.size !== cur.size) return false;
+    for (const v of set) if (!cur.has(v)) return false;
+  }
+  return true;
+}
+
+function isEmptyFilters(f) {
+  return (
+    !f.search &&
+    (!f.categories || f.categories.length === 0) &&
+    (!f.routes || f.routes.length === 0) &&
+    !f.stage &&
+    !f.country &&
+    !f.owner &&
+    !f.aging &&
+    !f.uncontacted24h &&
+    !f.pipelineActive &&
+    !f.closedRecent &&
+    !f.dateFrom &&
+    !f.dateTo
+  );
+}
+
 export function Filters({ filters, setFilters, leads }) {
   const stages = useMemo(() => uniqueValues(leads, "lifecycle_stage"), [leads]);
   const countries = useMemo(() => uniqueValues(leads, "country_code"), [leads]);
@@ -20,17 +73,10 @@ export function Filters({ filters, setFilters, leads }) {
     setFilters({ ...filters, [key]: value });
   };
 
-  const clearAll = () => {
-    setFilters({
-      search: "",
-      categories: [],
-      routes: [],
-      stage: "",
-      country: "",
-      owner: "",
-      dateFrom: "",
-      dateTo: "",
-    });
+  const clearAll = () => setFilters({ ...EMPTY_FILTERS });
+
+  const applyPreset = (preset) => {
+    setFilters({ ...EMPTY_FILTERS, ...preset.preset });
   };
 
   const hasActiveFilters =
@@ -45,6 +91,23 @@ export function Filters({ filters, setFilters, leads }) {
 
   return (
     <section className="filters">
+      <div className="filters-quick-chips" role="group" aria-label="Filtros rápidos">
+        {QUICK_PRESETS.map((preset) => {
+          const active = matchesPreset(filters, preset);
+          return (
+            <button
+              key={preset.key}
+              type="button"
+              className={`quick-chip ${active ? "quick-chip--active" : ""}`}
+              onClick={() => applyPreset(preset)}
+              aria-pressed={active}
+            >
+              {preset.label}
+            </button>
+          );
+        })}
+      </div>
+
       <div className="filters-row filters-row-primary">
         <div className="filter-group filter-search">
           <input
@@ -161,6 +224,50 @@ function uniqueValues(leads, key) {
   return [...set].sort();
 }
 
+// Umbrales de tiempo compartidos entre filtros y counters (mantener sincronizados)
+const AGING_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000;
+export const UNCONTACTED_THRESHOLD_MS = 24 * 60 * 60 * 1000;
+export const CLOSED_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+
+export const HOT_CATEGORIES = new Set(["P1", "P2"]);
+export const ACTIVE_STAGES = new Set(["contactado", "calificado", "propuesta"]);
+export const CLOSED_STAGES = new Set(["cerrado_ganado", "cerrado_perdido"]);
+
+export function isUncontacted24h(lead, now = Date.now()) {
+  const stage = lead.lifecycle_stage || "nuevo";
+  if (stage !== "nuevo") return false;
+  if (!lead.created_at) return false;
+  const created = new Date(lead.created_at).getTime();
+  if (!Number.isFinite(created)) return false;
+  return now - created >= UNCONTACTED_THRESHOLD_MS;
+}
+
+export function isHot(lead) {
+  return HOT_CATEGORIES.has(lead.category);
+}
+
+export function isPipelineActive(lead) {
+  return ACTIVE_STAGES.has(lead.lifecycle_stage);
+}
+
+export function isClosedRecent(lead, now = Date.now()) {
+  if (!CLOSED_STAGES.has(lead.lifecycle_stage)) return false;
+  const ref = lead.last_touch_at || lead.created_at;
+  if (!ref) return false;
+  const t = new Date(ref).getTime();
+  if (!Number.isFinite(t)) return false;
+  return now - t <= CLOSED_WINDOW_MS;
+}
+
+export function isAgingCold(lead, now = Date.now()) {
+  const currentStage = lead.lifecycle_stage || "nuevo";
+  if (currentStage !== "nuevo") return false;
+  if (!lead.created_at) return false;
+  const created = new Date(lead.created_at).getTime();
+  if (!Number.isFinite(created)) return false;
+  return now - created >= AGING_THRESHOLD_MS;
+}
+
 export function applyFilters(leads, filters) {
   if (!filters) return leads;
 
@@ -170,8 +277,10 @@ export function applyFilters(leads, filters) {
   const stage = filters.stage || "";
   const country = filters.country || "";
   const owner = filters.owner || "";
+  const aging = filters.aging || "";
   const dateFrom = filters.dateFrom ? new Date(filters.dateFrom + "T00:00:00") : null;
   const dateTo = filters.dateTo ? new Date(filters.dateTo + "T23:59:59") : null;
+  const now = Date.now();
 
   return leads.filter((lead) => {
     if (categories.length && !categories.includes(lead.category)) return false;
@@ -179,6 +288,11 @@ export function applyFilters(leads, filters) {
     if (stage && lead.lifecycle_stage !== stage) return false;
     if (country && lead.country_code !== country) return false;
     if (owner && lead.owner !== owner) return false;
+
+    if (aging === ">7d" && !isAgingCold(lead, now)) return false;
+    if (filters.uncontacted24h && !isUncontacted24h(lead, now)) return false;
+    if (filters.pipelineActive && !isPipelineActive(lead)) return false;
+    if (filters.closedRecent && !isClosedRecent(lead, now)) return false;
 
     if (dateFrom || dateTo) {
       const created = lead.created_at ? new Date(lead.created_at) : null;

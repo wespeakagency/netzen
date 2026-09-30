@@ -27,12 +27,13 @@ export function Header({ count, lastUpdated, onRefresh, refreshing, onLogout, on
           </button>
         )}
         <button
-          className="btn btn-primary btn-icon"
+          className="btn btn-primary btn-icon btn-icon--only"
           onClick={onRefresh}
           disabled={refreshing}
+          title={refreshing ? "Actualizando…" : "Actualizar"}
+          aria-label={refreshing ? "Actualizando" : "Actualizar"}
         >
-          <RefreshCw size={15} className={refreshing ? "spin" : ""} />
-          <span>{refreshing ? "Actualizando..." : "Actualizar"}</span>
+          <RefreshCw size={16} className={refreshing ? "spin" : ""} />
         </button>
         {onLogout && (
           <button
