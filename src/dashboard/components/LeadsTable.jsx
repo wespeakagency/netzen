@@ -58,7 +58,7 @@ function toIsoCountry(value) {
 }
 
 export function LeadsTable({ leads, hasActiveFilters, onClearFilters, onUpdateLead }) {
-  const [sortBy, setSortBy] = useState("score_priority");
+  const [sortBy, setSortBy] = useState("created_at");
   const [sortDir, setSortDir] = useState("desc");
   const [selectedLeadId, setSelectedLeadId] = useState(null);
   const selectedLead = useMemo(
@@ -91,7 +91,7 @@ export function LeadsTable({ leads, hasActiveFilters, onClearFilters, onUpdateLe
       setSortDir(sortDir === "asc" ? "desc" : "asc");
     } else {
       setSortBy(col);
-      setSortDir(col === "score_priority" ? "desc" : "asc");
+      setSortDir(col === "score_priority" || col === "created_at" ? "desc" : "asc");
     }
   };
 

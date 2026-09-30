@@ -43,6 +43,17 @@ function getLeads_() {
     return obj;
   });
 
+  // Ordenar por created_at descendente: lo mas reciente primero.
+  // Los sin fecha (raros, data corrupta) van al final.
+  leads.sort(function (a, b) {
+    var ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+    var tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+    if (!ta && !tb) return 0;
+    if (!ta) return 1;
+    if (!tb) return -1;
+    return tb - ta;
+  });
+
   return { leads: leads, count: leads.length, updated_at: new Date().toISOString() };
 }
 
