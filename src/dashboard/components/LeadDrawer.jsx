@@ -450,32 +450,19 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onEditL
             />
           </div>
 
+          <Section title="Historial de actividad">
+            <TouchTimeline
+              events={touchEvents}
+              status={touchStatus}
+            />
+          </Section>
+
           <div className="lead-drawer-meta-zone">
             <p className="lead-drawer-meta-zone-eyebrow">Antecedentes y registro</p>
 
             <Section title="Metadata">
               <Field label="Creado" value={formatDate(lead.created_at)} />
             </Section>
-
-            <section className="lead-drawer-section">
-              <button
-                type="button"
-                className="lead-drawer-collapsible"
-                onClick={() => setShowTimeline((v) => !v)}
-                aria-expanded={showTimeline}
-              >
-                {showTimeline ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                <span>Historial de actividad</span>
-              </button>
-              {showTimeline && (
-                <div className="lead-drawer-section-body">
-                  <TouchTimeline
-                    events={touchEvents}
-                    status={touchStatus}
-                  />
-                </div>
-              )}
-            </section>
 
             {hasAttribution(lead) && (
               <section className="lead-drawer-section">

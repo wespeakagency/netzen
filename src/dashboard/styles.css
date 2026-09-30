@@ -2337,7 +2337,8 @@ body {
   font-size: 12px;
 }
 .lead-drawer-meta-zone .lead-drawer-section-title {
-  font-size: 9.5px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
 }
 
 .lead-drawer-footer {
@@ -2391,20 +2392,21 @@ body {
 .lead-drawer-section-title {
   position: relative;
   font-family: "Montserrat", "Helvetica Neue", Arial, sans-serif;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--nz-text-muted);
   margin: 0 0 14px;
-  padding-bottom: 8px;
+  padding-bottom: 10px;
+  line-height: 1;
 }
 .lead-drawer-section-title::after {
   content: "";
   position: absolute;
   left: 0;
   bottom: 0;
-  width: 28px;
+  width: 32px;
   height: 2px;
   background: var(--nz-red);
   border-radius: 2px;
@@ -2830,27 +2832,48 @@ button.pipeline-step:disabled {
 
 .lead-drawer-scoring-popover {
   position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
+  top: 0;
+  right: calc(100% + 14px);
   left: auto;
   width: 300px;
-  max-width: calc(100vw - 32px);
+  max-width: min(320px, calc(100vw - 32px));
   background: var(--nz-surface);
   border: 1px solid var(--nz-border);
-  border-radius: 10px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
-  padding: 14px;
+  border-radius: 12px;
+  box-shadow: 0 16px 40px -12px rgba(15, 23, 42, 0.28), 0 2px 6px rgba(15, 23, 42, 0.06);
+  padding: 16px;
   z-index: 20;
   animation: lead-drawer-fade-in 120ms ease-out;
 }
 
+@media (max-width: 640px) {
+  .lead-drawer-scoring-popover {
+    top: calc(100% + 10px);
+    right: 0;
+    left: auto;
+  }
+}
+
 .lead-drawer-scoring-popover-title {
-  font-size: 11px;
+  position: relative;
+  font-family: "Montserrat", "Helvetica Neue", Arial, sans-serif;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.16em;
   color: var(--nz-text-muted);
-  margin-bottom: 10px;
+  margin: 0 0 14px;
+  padding-bottom: 8px;
+}
+.lead-drawer-scoring-popover-title::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 22px;
+  height: 2px;
+  background: var(--nz-red);
+  border-radius: 2px;
 }
 
 .lead-drawer-scoring-popover-empty {
@@ -2866,18 +2889,19 @@ button.pipeline-step:disabled {
 }
 
 .lead-drawer-scoring-popover-cta {
-  margin-top: 10px;
+  margin-top: 14px;
   width: 100%;
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid var(--nz-border-strong);
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--nz-border);
   background: var(--nz-surface-alt);
   color: var(--nz-text);
-  font-family: inherit;
-  font-size: 12.5px;
+  font-family: "Montserrat", "Helvetica Neue", Arial, sans-serif;
+  font-size: 12px;
   font-weight: 600;
+  letter-spacing: 0.02em;
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
 }
 .lead-drawer-scoring-popover-cta:hover {
   background: var(--nz-red-soft);
