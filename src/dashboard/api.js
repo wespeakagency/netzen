@@ -1,6 +1,10 @@
 import { SHEETS_ENDPOINT, DASHBOARD_API_TOKEN } from "../lib/env.js";
 
 const EDITABLE_FIELDS = ["lifecycle_stage"];
+export const LEAD_EDIT_FIELDS = [
+  "full_name", "job_title", "work_email", "whatsapp", "country_code",
+  "company_name", "route_code", "business_model", "owner", "next_action", "notes"
+];
 const TOUCH_EVENTS_CACHE_TTL_MS = 30_000;
 
 export const touchEventsCache = new Map();
@@ -82,4 +86,35 @@ export async function updateLead({ leadId, field, value }) {
   const data = await res.json();
   if (!data.ok) throw new Error(data.error || "Error desconocido al actualizar");
   return data;
+}
+
+async function mutateLead(action, payload) {
+  if (!SHEETS_ENDPOINT) throw new Error("VITE_SHEETS_ENDPOINT no configurado");
+  if (!DASHBOARD_API_TOKEN) throw new Error("VITE_DASHBOARD_API_TOKEN no configurado");
+  const res = await fetch(SHEETS_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action, token: DASHBOARD_API_TOKEN, actor: "dashboard-internal", ...payload })
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || "No se pudo completar la operación");
+  return data;
+}
+
+export function editLead({ leadId, changes, reason = "" }) {
+  if (!leadId) throw new Error("leadId requerido");
+  const safeChanges = Object.fromEntries(
+    Object.entries(changes || {}).filter(([key]) => LEAD_EDIT_FIELDS.includes(key))
+  );
+  if (!Object.keys(safeChanges).length) throw new Error("No hay cambios permitidos");
+  return mutateLead("editLead", { lead_id: leadId, changes: safeChanges, reason });
+}
+
+export function archiveLead({ leadId, reason, confirmation }) {
+  return mutateLead("archiveLead", { lead_id: leadId, reason, confirmation });
+}
+
+export function restoreLead({ leadId, reason = "Restaurado desde dashboard", confirmation }) {
+  return mutateLead("restoreLead", { lead_id: leadId, reason, confirmation });
 }

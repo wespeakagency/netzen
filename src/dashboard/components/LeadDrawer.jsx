@@ -2,8 +2,11 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   X, Mail, MessageCircle, ChevronDown, ChevronRight, Copy, Check, Edit3, Activity,
   Users, Wallet, CalendarClock, Wrench, BarChart3, Sparkles, HelpCircle,
+  Archive, ArchiveRestore, Save, ShieldAlert,
 } from "lucide-react";
 import { fetchTouchEvents } from "../api.js";
+import { BUSINESS_MODELS } from "../../lib/leadCatalogs.js";
+import { PAISES } from "../../lib/paisesLadas.js";
 import {
   computeScoringBreakdown,
   buildScoringNarrative,
@@ -39,7 +42,24 @@ export const STAGE_LABELS = {
 // Stages que aparecen como <option> en el dropdown de edición. Excluye "nurture" a propósito.
 const SELECTABLE_STAGES = ["nuevo", "contactado", "calificado", "propuesta", "cerrado_ganado", "cerrado_perdido"];
 
-export function LeadDrawer({ lead, onClose, onUpdateLead }) {
+const EDIT_FIELDS = [
+  ["full_name", "Nombre"], ["job_title", "Cargo"], ["work_email", "Email"],
+  ["whatsapp", "WhatsApp"], ["country_code", "País", "countries"], ["company_name", "Empresa"],
+  ["route_code", "Ruta", "routes"], ["business_model", "Modelo", "business_models"], ["owner", "Propietario"],
+  ["next_action", "Próxima acción"], ["notes", "Notas"]
+];
+
+const EDIT_FIELD_SPANS = {
+  full_name: "half", company_name: "half",
+  job_title: "half", owner: "half",
+  work_email: "half", whatsapp: "half",
+  country_code: "third", business_model: "third", route_code: "third",
+  next_action: "wide", notes: "wide",
+};
+
+const isArchived = (lead) => /\[\[CRM_ARCHIVE:v1\|/.test(String(lead?.flags || ""));
+
+export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onEditLead, onArchiveLead, onRestoreLead }) {
   const closeBtnRef = useRef(null);
   const [showAttribution, setShowAttribution] = useState(false);
   const [showTimeline, setShowTimeline] = useState(true);
@@ -51,6 +71,11 @@ export function LeadDrawer({ lead, onClose, onUpdateLead }) {
   const [touchEvents, setTouchEvents] = useState([]);
   const [touchStatus, setTouchStatus] = useState("idle"); // idle | loading | ok | error
   const [scoringPopoverOpen, setScoringPopoverOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editValues, setEditValues] = useState({});
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [sensitiveStatus, setSensitiveStatus] = useState("idle");
+  const [sensitiveError, setSensitiveError] = useState("");
   const scoringPopoverRef = useRef(null);
   const scoringHoverTimerRef = useRef(null);
 
@@ -121,6 +146,45 @@ export function LeadDrawer({ lead, onClose, onUpdateLead }) {
     } catch {
       // ignorar
     }
+  };
+
+  const openEdit = () => {
+    setEditValues(Object.fromEntries(EDIT_FIELDS.map(([key]) => [key, String(lead?.[key] || "")] )));
+    setSensitiveError("");
+    setEditOpen(true);
+  };
+
+  const saveEdit = async (e) => {
+    e.preventDefault();
+    const changes = Object.fromEntries(
+      EDIT_FIELDS.map(([key]) => [key, String(editValues[key] || "").trim()])
+        .filter(([key, value]) => value !== String(lead?.[key] || "").trim())
+    );
+    if (!Object.keys(changes).length) { setEditOpen(false); return; }
+    setSensitiveStatus("saving");
+    setSensitiveError("");
+    try {
+      await onEditLead({ leadId: lead.lead_id, changes, reason: "Edición confirmada desde dashboard" });
+      setEditOpen(false);
+    } catch (err) {
+      setSensitiveError(err.message || "No se pudieron guardar los cambios");
+    } finally { setSensitiveStatus("idle"); }
+  };
+
+  const submitArchiveAction = async ({ reason, confirmation }) => {
+    setSensitiveStatus("saving");
+    setSensitiveError("");
+    try {
+      if (confirmAction === "archive") {
+        await onArchiveLead({ leadId: lead.lead_id, reason, confirmation });
+      } else {
+        await onRestoreLead({ leadId: lead.lead_id, reason, confirmation });
+      }
+      setConfirmAction(null);
+      onClose();
+    } catch (err) {
+      setSensitiveError(err.message || "No se pudo completar la operación");
+    } finally { setSensitiveStatus("idle"); }
   };
 
   useEffect(() => {
@@ -260,6 +324,21 @@ export function LeadDrawer({ lead, onClose, onUpdateLead }) {
         </header>
 
         <div className="lead-drawer-body">
+          <div className="lead-record-actions">
+            {!isArchived(lead) && onEditLead && (
+              <button type="button" className="btn btn-ghost" onClick={openEdit}><Edit3 size={15} /> Editar datos</button>
+            )}
+            {!isArchived(lead) && onArchiveLead && (
+              <button type="button" className="btn btn-danger-ghost" onClick={() => { setSensitiveError(""); setConfirmAction("archive"); }}>
+                <Archive size={15} /> Archivar
+              </button>
+            )}
+            {isArchived(lead) && onRestoreLead && (
+              <button type="button" className="btn btn-primary" onClick={() => { setSensitiveError(""); setConfirmAction("restore"); }}>
+                <ArchiveRestore size={15} /> Restaurar lead
+              </button>
+            )}
+          </div>
           {(lead.whatsapp || lead.work_email) && (
             <div className="lead-drawer-actions">
               {lead.whatsapp && (
@@ -421,6 +500,87 @@ export function LeadDrawer({ lead, onClose, onUpdateLead }) {
           )}
         </div>
       </aside>
+      {editOpen && (
+        <div className="sensitive-modal-overlay" onClick={(e) => { e.stopPropagation(); if (sensitiveStatus !== "saving") setEditOpen(false); }}>
+          <form className="sensitive-modal" onSubmit={saveEdit} onClick={(e) => e.stopPropagation()}>
+            <div className="sensitive-modal-head"><div><h3>Editar datos sensibles</h3><p>Solo se guardarán los campos modificados y quedarán auditados.</p></div></div>
+            <div className="lead-edit-grid">
+              {EDIT_FIELDS.map(([key, label, catalogName]) => (
+                <label key={key} className={`lead-edit-field lead-edit-field--${EDIT_FIELD_SPANS[key] || "half"}`}>
+                  <span>{label}</span>
+                  {catalogName ? (
+                    <select value={editValues[key] || ""} onChange={(e) => setEditValues((v) => ({ ...v, [key]: e.target.value }))}>
+                      {buildEditOptions(key, lead?.[key], catalogs, catalogName).map((option) => (
+                        <option key={`${key}-${option.value}`} value={option.value} disabled={option.disabled}>{option.label}</option>
+                      ))}
+                    </select>
+                  ) : key === "notes" || key === "next_action" ? (
+                    <textarea value={editValues[key] || ""} maxLength={2000} onChange={(e) => setEditValues((v) => ({ ...v, [key]: e.target.value }))} />
+                  ) : (
+                    <input type={key === "work_email" ? "email" : "text"} value={editValues[key] || ""} maxLength={key === "whatsapp" ? 40 : 320} required={key === "full_name"} onChange={(e) => setEditValues((v) => ({ ...v, [key]: e.target.value }))} />
+                  )}
+                </label>
+              ))}
+            </div>
+            {sensitiveError && <p className="sensitive-modal-error">{sensitiveError}</p>}
+            <div className="sensitive-modal-actions">
+              <button type="button" className="btn btn-ghost" disabled={sensitiveStatus === "saving"} onClick={() => setEditOpen(false)}>Cancelar</button>
+              <button type="submit" className="btn btn-primary" disabled={sensitiveStatus === "saving"}><Save size={15} /> {sensitiveStatus === "saving" ? "Guardando…" : "Confirmar cambios"}</button>
+            </div>
+          </form>
+        </div>
+      )}
+      {confirmAction && (
+        <SensitiveConfirmation
+          action={confirmAction}
+          lead={lead}
+          busy={sensitiveStatus === "saving"}
+          error={sensitiveError}
+          onCancel={() => setConfirmAction(null)}
+          onConfirm={submitArchiveAction}
+        />
+      )}
+    </div>
+  );
+}
+
+function buildEditOptions(field, currentValue, catalogs, catalogName) {
+  const current = String(currentValue || "").trim();
+  const catalogItems = Array.isArray(catalogs?.[catalogName]) ? catalogs[catalogName] : [];
+  const canonical = field === "country_code"
+    ? PAISES.map(({ name }) => ({ value: name, label: name }))
+    : catalogItems.length
+      ? catalogItems.map((item) => ({ value: String(item.code), label: String(item.label || item.code) }))
+    : field === "business_model"
+      ? BUSINESS_MODELS.map((value) => ({ value, label: value }))
+      : [];
+  const placeholder = field === "country_code" ? "Seleccioná un país" : "Seleccioná una opción";
+  const options = [{ value: "", label: placeholder, disabled: true }, ...canonical];
+  if (current && !options.some((option) => option.value === current)) {
+    options.splice(1, 0, { value: current, label: `${current} (valor histórico)` });
+  }
+  return options;
+}
+
+function SensitiveConfirmation({ action, lead, busy, error, onCancel, onConfirm }) {
+  const [reason, setReason] = useState("");
+  const [confirmation, setConfirmation] = useState("");
+  const archive = action === "archive";
+  const valid = confirmation === String(lead.lead_id) && (!archive || reason.trim().length >= 5);
+  return (
+    <div className="sensitive-modal-overlay" onClick={(e) => { e.stopPropagation(); if (!busy) onCancel(); }}>
+      <form className="sensitive-modal sensitive-modal--confirm" onSubmit={(e) => { e.preventDefault(); if (valid) onConfirm({ reason: reason.trim(), confirmation }); }} onClick={(e) => e.stopPropagation()}>
+        <ShieldAlert size={30} className="sensitive-modal-warning" />
+        <h3>{archive ? "Archivar lead" : "Restaurar lead"}</h3>
+        <p>{archive ? "El lead se ocultará del dashboard activo, pero NO se eliminará. La acción quedará registrada." : "El lead volverá al listado activo. La restauración quedará registrada."}</p>
+        <label className="lead-edit-field"><span>Motivo {archive ? "(obligatorio)" : "(opcional)"}</span><textarea value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} required={archive} /></label>
+        <label className="lead-edit-field"><span>Escribí el ID para confirmar: <strong>{lead.lead_id}</strong></span><input value={confirmation} onChange={(e) => setConfirmation(e.target.value)} autoComplete="off" /></label>
+        {error && <p className="sensitive-modal-error">{error}</p>}
+        <div className="sensitive-modal-actions">
+          <button type="button" className="btn btn-ghost" disabled={busy} onClick={onCancel}>Cancelar</button>
+          <button type="submit" className={archive ? "btn btn-danger" : "btn btn-primary"} disabled={!valid || busy}>{busy ? "Procesando…" : archive ? "Archivar sin eliminar" : "Restaurar"}</button>
+        </div>
+      </form>
     </div>
   );
 }

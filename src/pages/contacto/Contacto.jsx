@@ -10,6 +10,7 @@ import { submitLead, FormSubmitError } from "../../lib/forms.js";
 import { validateFields, hasErrors } from "../../lib/formValidation.js";
 import { LABELS } from "../../lib/copy.js";
 import { PAISES, getLada, buildWhatsappE164 } from "../../lib/paisesLadas.js";
+import { BUSINESS_MODELS } from "../../lib/leadCatalogs.js";
 
 const SITUACIONES = [
   { k: "A", label: "Apenas empiezo / explorando" },
@@ -18,7 +19,6 @@ const SITUACIONES = [
   { k: "D", label: "Ya tengo software propio / modernizar" }
 ];
 
-const MODELOS = ["Venta directa", "Multinivel", "Retail", "Franquicias", "E-commerce", "Punto de venta"];
 const TAMANIOS = ["Menos de 100 distribuidores", "100 – 1,000", "1,000 – 10,000", "Más de 10,000"];
 
 // Inputs de calificación · alimentan el scoring del CRM (Fase 2).
@@ -237,7 +237,7 @@ function FormularioContacto({ demo }) {
           <label htmlFor="c-modelo">Modelo de negocio</label>
           <select id="c-modelo" name="modelo" value={values.modelo} onChange={update("modelo")}>
             <option value="" disabled>Elige tu modelo</option>
-            {MODELOS.map((m) => <option key={m} value={m}>{m}</option>)}
+            {BUSINESS_MODELS.map((m) => <option key={m} value={m}>{m}</option>)}
           </select>
         </div>
         {demo && (

@@ -16,6 +16,7 @@ const EMPTY_FILTERS = {
   closedRecent: false,
   dateFrom: "",
   dateTo: "",
+  showArchived: false,
 };
 
 const QUICK_PRESETS = [
@@ -51,6 +52,7 @@ function isEmptyFilters(f) {
     !f.uncontacted24h &&
     !f.pipelineActive &&
     !f.closedRecent &&
+    !f.showArchived &&
     !f.dateFrom &&
     !f.dateTo
   );
@@ -87,7 +89,8 @@ export function Filters({ filters, setFilters, leads }) {
     filters.country ||
     filters.owner ||
     filters.dateFrom ||
-    filters.dateTo;
+    filters.dateTo ||
+    filters.showArchived;
 
   return (
     <section className="filters">
@@ -106,6 +109,14 @@ export function Filters({ filters, setFilters, leads }) {
             </button>
           );
         })}
+        <button
+          type="button"
+          className={`quick-chip quick-chip--archive ${filters.showArchived ? "quick-chip--active" : ""}`}
+          onClick={() => setValue("showArchived", !filters.showArchived)}
+          aria-pressed={!!filters.showArchived}
+        >
+          {filters.showArchived ? "Archivados" : "Ver archivados"}
+        </button>
       </div>
 
       <div className="filters-row filters-row-primary">

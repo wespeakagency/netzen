@@ -210,27 +210,27 @@ const CATEGORY_META = {
   P1: {
     tier: "high",
     opening: () => "tiene todos los indicadores de un lead listo para cerrar.",
-    action: "Contactalo hoy mismo. Ya cumple con los criterios de compra, no hace falta calificar más.",
+    action: "Contáctalo hoy mismo. Ya cumple con los criterios de compra, no hace falta calificar más.",
   },
   P2: {
     tier: "mid",
     opening: () => "muestra buenas señales de compra.",
-    action: "Contactalo en las próximas 24h. Usá esa primera charla para resolver los puntos que aún quedan abiertos.",
+    action: "Contáctalo en las próximas 24h. Usa esa primera charla para resolver los puntos que aún quedan abiertos.",
   },
   P3: {
     tier: "low",
     opening: () => "está en fase exploratoria, todavía no busca cerrar pronto.",
-    action: "Sumalo a nurture. Mandale contenido útil y reevaluá en 1-2 semanas.",
+    action: "Súmalo a nurture. Mándale contenido útil y reevalúa en 1-2 semanas.",
   },
   P4: {
     tier: "cold",
     opening: () => "está lejos de una decisión de compra hoy.",
-    action: "Baja prioridad. Podés hacer follow-up ocasional o dejarlo enfriar en nurture pasivo.",
+    action: "Baja prioridad. Puedes hacer follow-up ocasional o dejarlo enfriar en nurture pasivo.",
   },
   PENDIENTE: {
     tier: "none",
     opening: () => "completó parte del formulario pero faltan datos clave para calificarlo.",
-    action: "Antes de priorizarlo, contactá para completar la información que falta.",
+    action: "Antes de priorizarlo, contáctalo para completar la información que falta.",
   },
   NO_SCORABLE: {
     tier: "none",

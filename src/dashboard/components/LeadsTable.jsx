@@ -75,7 +75,7 @@ function toIsoCountry(value) {
   return COUNTRY_ISO[raw.toLowerCase()] || raw.slice(0, 2).toUpperCase();
 }
 
-export function LeadsTable({ leads, hasActiveFilters, onClearFilters, onUpdateLead }) {
+export function LeadsTable({ leads, catalogs, hasActiveFilters, onClearFilters, onUpdateLead, onEditLead, onArchiveLead, onRestoreLead }) {
   const [sortBy, setSortBy] = useState("created_at");
   const [sortDir, setSortDir] = useState("desc");
   const [selectedLeadId, setSelectedLeadId] = useState(null);
@@ -300,7 +300,15 @@ export function LeadsTable({ leads, hasActiveFilters, onClearFilters, onUpdateLe
         />
       )}
 
-      <LeadDrawer lead={selectedLead} onClose={closeDrawer} onUpdateLead={onUpdateLead} />
+      <LeadDrawer
+        lead={selectedLead}
+        catalogs={catalogs}
+        onClose={closeDrawer}
+        onUpdateLead={onUpdateLead}
+        onEditLead={onEditLead}
+        onArchiveLead={onArchiveLead}
+        onRestoreLead={onRestoreLead}
+      />
 
       <ShortcutsOverlay open={showShortcuts} onClose={() => setShowShortcuts(false)} />
     </>

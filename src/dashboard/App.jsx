@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { fetchLeads, updateLead } from "./api.js";
+import { fetchLeads, fetchCatalogs, updateLead, editLead, archiveLead, restoreLead } from "./api.js";
 import { HAS_DASHBOARD_PASSWORD } from "../lib/env.js";
 import { Header } from "./components/Header.jsx";
 import { Counters } from "./components/Counters.jsx";
@@ -22,7 +22,10 @@ const INITIAL_FILTERS = {
   closedRecent: false,
   dateFrom: "",
   dateTo: "",
+  showArchived: false,
 };
+
+export const isLeadArchived = (lead) => /\[\[CRM_ARCHIVE:v1\|/.test(String(lead?.flags || ""));
 
 const CSV_COLUMNS = [
   "created_at",
@@ -42,6 +45,7 @@ const CSV_COLUMNS = [
 export function App() {
   const [authed, setAuthed] = useState(() => !HAS_DASHBOARD_PASSWORD || isAuthenticated());
   const [leads, setLeads] = useState([]);
+  const [catalogs, setCatalogs] = useState({});
   const [status, setStatus] = useState("loading");
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -52,8 +56,12 @@ export function App() {
   const load = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setRefreshing(true);
     try {
-      const data = await fetchLeads();
+      const [data, catalogData] = await Promise.all([
+        fetchLeads(),
+        fetchCatalogs().catch(() => ({ catalogs: {} })),
+      ]);
       setLeads(data.leads || []);
+      setCatalogs(catalogData.catalogs || {});
       setLastUpdated(new Date());
       setStatus("ok");
       setError(null);
@@ -134,6 +142,24 @@ export function App() {
     }
   }, [showToast]);
 
+  const handleEditLead = useCallback(async ({ leadId, changes, reason }) => {
+    await editLead({ leadId, changes, reason });
+    setLeads((prev) => prev.map((lead) => lead.lead_id === leadId ? { ...lead, ...changes } : lead));
+    showToast({ type: "success", message: "Datos del lead actualizados" });
+  }, [showToast]);
+
+  const handleArchiveLead = useCallback(async ({ leadId, reason, confirmation }) => {
+    const result = await archiveLead({ leadId, reason, confirmation });
+    setLeads((prev) => prev.map((lead) => lead.lead_id === leadId ? { ...lead, flags: result.flags } : lead));
+    showToast({ type: "success", message: "Lead archivado sin eliminar sus datos" });
+  }, [showToast]);
+
+  const handleRestoreLead = useCallback(async ({ leadId, reason, confirmation }) => {
+    const result = await restoreLead({ leadId, reason, confirmation });
+    setLeads((prev) => prev.map((lead) => lead.lead_id === leadId ? { ...lead, flags: result.flags } : lead));
+    showToast({ type: "success", message: "Lead restaurado" });
+  }, [showToast]);
+
   const handleLogout = () => {
     clearAuth();
     setAuthed(false);
@@ -144,7 +170,11 @@ export function App() {
 
   const clearFilters = () => setFilters(INITIAL_FILTERS);
 
-  const filteredLeads = useMemo(() => applyFilters(leads, filters), [leads, filters]);
+  const visibleByArchive = useMemo(
+    () => leads.filter((lead) => filters.showArchived ? isLeadArchived(lead) : !isLeadArchived(lead)),
+    [leads, filters.showArchived]
+  );
+  const filteredLeads = useMemo(() => applyFilters(visibleByArchive, filters), [visibleByArchive, filters]);
   const hasActiveFilters =
     filters.search ||
     (filters.categories || []).length > 0 ||
@@ -156,9 +186,10 @@ export function App() {
     filters.uncontacted24h ||
     filters.pipelineActive ||
     filters.closedRecent ||
+    filters.showArchived ||
     filters.dateFrom ||
     filters.dateTo;
-  const isFiltered = filteredLeads.length !== leads.length;
+  const isFiltered = filteredLeads.length !== visibleByArchive.length;
 
   const applyCounterPreset = useCallback((preset) => {
     setFilters({ ...INITIAL_FILTERS, ...(preset || {}) });
@@ -186,7 +217,7 @@ export function App() {
   return (
     <div className="dashboard-shell">
       <Header
-        count={leads.length}
+        count={visibleByArchive.length}
         lastUpdated={lastUpdated}
         onRefresh={load}
         refreshing={refreshing}
@@ -207,27 +238,31 @@ export function App() {
 
         {status === "ok" && (
           <>
-            <Filters filters={filters} setFilters={setFilters} leads={leads} />
+            <Filters filters={filters} setFilters={setFilters} leads={visibleByArchive} />
 
             {isFiltered && (
               <div className="filter-summary">
-                Mostrando <strong>{filteredLeads.length}</strong> de <strong>{leads.length}</strong> leads
+                Mostrando <strong>{filteredLeads.length}</strong> de <strong>{visibleByArchive.length}</strong> leads
               </div>
             )}
 
-            <Counters leads={leads} onSelectPreset={applyCounterPreset} />
+            <Counters leads={visibleByArchive} onSelectPreset={applyCounterPreset} />
             <LeadsTable
               leads={filteredLeads}
+              catalogs={catalogs}
               hasActiveFilters={!!hasActiveFilters}
               onClearFilters={clearFilters}
               onUpdateLead={handleUpdateLead}
+              onEditLead={handleEditLead}
+              onArchiveLead={handleArchiveLead}
+              onRestoreLead={handleRestoreLead}
             />
           </>
         )}
       </main>
 
       <footer className="dashboard-footer">
-        <span>Netzen · Dashboard interno · prueba</span>
+        <span>Netzen · Dashboard interno · {new Date().getFullYear()}</span>
         <span>Data desde Google Sheets vía Apps Script</span>
       </footer>
 
