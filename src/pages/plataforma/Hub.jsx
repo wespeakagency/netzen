@@ -1,9 +1,10 @@
 // /plataforma — hub del núcleo tecnológico
 import React from "react";
 import { Link } from "react-router-dom";
-import { Icon, Button, Container, Section, SectionHeading, Reveal, MockFrame, MockBars, CheckLine } from "../../components/ui.jsx";
+import { Icon, Button, Section, SectionHeading, Reveal, MockFrame, MockBars } from "../../components/ui.jsx";
 import { PageHero, CTABand } from "../../components/chrome.jsx";
 import { MODULOS, MODULOS_ORDER } from "./data.js";
+import { PlatformModuleCard } from "./components/PlatformModuleCards.jsx";
 import { LABELS, CTA_PATHS } from "../../lib/copy.js";
 
 function HeroMock() {
@@ -58,19 +59,7 @@ export default function PlataformaHub() {
             const m = MODULOS[slug];
             return (
               <Reveal key={slug} delay={(i % 3) * 90}>
-                <Link to={`/plataforma/${slug}`} className="card card--hover" style={{ display: "flex", flexDirection: "column", gap: 14, height: "100%", color: "inherit" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span className="bubble"><Icon name={m.icon} size={21} /></span>
-                    <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 12, color: "var(--nz-gray-400)" }}>{String(i + 1).padStart(2, "0")}</span>
-                  </div>
-                  <div>
-                    <h3 style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.3 }}>{m.name}</h3>
-                    <p style={{ marginTop: 7, fontSize: 13.5, lineHeight: 1.55, color: "var(--text-secondary)" }}>{m.lead.split(":")[0].split(".")[0]}.</p>
-                  </div>
-                  <span style={{ marginTop: "auto", display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 13.5, color: "var(--nz-red)" }}>
-                    Ver módulo <Icon name="ArrowRight" size={14} />
-                  </span>
-                </Link>
+                <PlatformModuleCard module={m} to={`/plataforma/${slug}`} index={i} />
               </Reveal>
             );
           })}
