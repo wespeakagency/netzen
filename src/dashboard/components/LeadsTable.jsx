@@ -1,6 +1,8 @@
-import React, { useMemo, useState } from "react";
-import { AlertCircle, Zap, Timer, Clock, HelpCircle, Info, Eye } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { AlertCircle, Zap, Timer, Clock, HelpCircle, Info, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { LeadDrawer, STAGE_LABELS } from "./LeadDrawer.jsx";
+
+const PAGE_SIZE = 25;
 
 const COLUMNS = [
   { key: "category", label: "Categoría", type: "category", width: "110px" },
@@ -61,6 +63,7 @@ export function LeadsTable({ leads, hasActiveFilters, onClearFilters, onUpdateLe
   const [sortBy, setSortBy] = useState("created_at");
   const [sortDir, setSortDir] = useState("desc");
   const [selectedLeadId, setSelectedLeadId] = useState(null);
+  const [page, setPage] = useState(1);
   const selectedLead = useMemo(
     () => (selectedLeadId ? leads.find((l) => l.lead_id === selectedLeadId) || null : null),
     [leads, selectedLeadId]
@@ -84,6 +87,17 @@ export function LeadsTable({ leads, hasActiveFilters, onClearFilters, onUpdateLe
       return 0;
     });
     return copy;
+  }, [leads, sortBy, sortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const pageEnd = Math.min(pageStart + PAGE_SIZE, sorted.length);
+  const visible = useMemo(() => sorted.slice(pageStart, pageEnd), [sorted, pageStart, pageEnd]);
+
+  // Reset a pagina 1 cuando cambian los filtros (leads) o el sort.
+  useEffect(() => {
+    setPage(1);
   }, [leads, sortBy, sortDir]);
 
   const handleSort = (col) => {
@@ -118,6 +132,8 @@ export function LeadsTable({ leads, hasActiveFilters, onClearFilters, onUpdateLe
     );
   }
 
+  const openDrawerFor = (lead) => setSelectedLeadId(lead.lead_id || null);
+
   return (
     <>
       <div className="table-wrapper">
@@ -141,20 +157,19 @@ export function LeadsTable({ leads, hasActiveFilters, onClearFilters, onUpdateLe
             </tr>
           </thead>
           <tbody>
-            {sorted.map((lead, idx) => {
+            {visible.map((lead, idx) => {
               const cat = lead.category || "PENDIENTE";
               const rowId = lead.lead_id || `row-${idx}`;
-              const openDrawer = () => setSelectedLeadId(lead.lead_id || null);
               return (
                 <tr
                   key={rowId}
                   data-category={cat}
                   className="lead-row"
-                  onClick={openDrawer}
+                  onClick={() => openDrawerFor(lead)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      openDrawer();
+                      openDrawerFor(lead);
                     }
                   }}
                   tabIndex={0}
@@ -167,7 +182,7 @@ export function LeadsTable({ leads, hasActiveFilters, onClearFilters, onUpdateLe
                       className="row-context-btn"
                       onClick={(e) => {
                         e.stopPropagation();
-                        openDrawer();
+                        openDrawerFor(lead);
                       }}
                       title="Ver contexto completo"
                     >
@@ -194,9 +209,105 @@ export function LeadsTable({ leads, hasActiveFilters, onClearFilters, onUpdateLe
           </tbody>
         </table>
       </div>
+
+      <div className="leads-cards" role="list" aria-label="Listado de leads">
+        {visible.map((lead, idx) => (
+          <LeadCard
+            key={lead.lead_id || `card-${idx}`}
+            lead={lead}
+            onClick={() => openDrawerFor(lead)}
+          />
+        ))}
+      </div>
+
+      {sorted.length > PAGE_SIZE && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          rangeStart={pageStart + 1}
+          rangeEnd={pageEnd}
+          total={sorted.length}
+          onPrev={() => setPage((p) => Math.max(1, p - 1))}
+          onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+        />
+      )}
+
       <LeadDrawer lead={selectedLead} onClose={() => setSelectedLeadId(null)} onUpdateLead={onUpdateLead} />
     </>
   );
+}
+
+function LeadCard({ lead, onClick }) {
+  const cat = lead.category || "PENDIENTE";
+  const Icon = CATEGORY_ICONS[cat] || HelpCircle;
+  const score = lead.score_priority;
+  const scoreCls =
+    score == null || score === ""
+      ? ""
+      : Number(score) >= 80
+        ? "score-high"
+        : Number(score) >= 60
+          ? "score-mid"
+          : "score-low";
+  const stageLabel = lead.lifecycle_stage
+    ? STAGE_LABELS[lead.lifecycle_stage] || String(lead.lifecycle_stage).replace(/_/g, " ")
+    : "";
+  const stageMod = lead.lifecycle_stage || "";
+  const createdLabel = formatShortDate(lead.created_at);
+  const label = `Ver detalle de ${lead.full_name || lead.work_email || "lead"}`;
+
+  return (
+    <div
+      className="lead-card"
+      data-category={cat}
+      role="listitem"
+      tabIndex={0}
+      aria-label={label}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+    >
+      <div className="lead-card-head">
+        <span className={`badge badge-${String(cat).toLowerCase()}`}>
+          <Icon size={12} />
+          {cat}
+        </span>
+        {score != null && score !== "" && (
+          <span className={`cell-score ${scoreCls}`}>{Number(score)}</span>
+        )}
+        {lead.route_code && <span className="badge-route">{lead.route_code}</span>}
+      </div>
+
+      <div className="lead-card-title">
+        {lead.full_name || <span className="cell-empty">Sin nombre</span>}
+      </div>
+      {lead.company_name && (
+        <div className="lead-card-subtitle">{lead.company_name}</div>
+      )}
+
+      <div className="lead-card-meta">
+        {stageLabel && (
+          <span className={`stage-tag stage-tag--${stageMod}`}>{stageLabel}</span>
+        )}
+        {createdLabel && <span className="lead-card-date">{createdLabel}</span>}
+      </div>
+    </div>
+  );
+}
+
+function formatShortDate(value) {
+  if (!value) return "";
+  try {
+    const d = new Date(value);
+    if (isNaN(d)) return String(value);
+    return d.toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "2-digit" });
+  } catch {
+    return String(value);
+  }
 }
 
 function renderCell(value, type) {
@@ -250,4 +361,39 @@ function getCellTooltip(value, type) {
   if (type === "text") return String(value);
   if (type === "country") return String(value);
   return "";
+}
+
+function Pagination({ currentPage, totalPages, rangeStart, rangeEnd, total, onPrev, onNext }) {
+  return (
+    <nav className="leads-pagination" aria-label="Paginación de leads">
+      <div className="leads-pagination-info">
+        Mostrando <strong>{rangeStart}</strong>–<strong>{rangeEnd}</strong> de <strong>{total}</strong> leads
+      </div>
+      <div className="leads-pagination-controls">
+        <button
+          type="button"
+          className="leads-pagination-btn"
+          onClick={onPrev}
+          disabled={currentPage === 1}
+          aria-label="Página anterior"
+        >
+          <ChevronLeft size={16} />
+          <span>Anterior</span>
+        </button>
+        <span className="leads-pagination-status">
+          Página {currentPage} de {totalPages}
+        </span>
+        <button
+          type="button"
+          className="leads-pagination-btn"
+          onClick={onNext}
+          disabled={currentPage === totalPages}
+          aria-label="Página siguiente"
+        >
+          <span>Siguiente</span>
+          <ChevronRight size={16} />
+        </button>
+      </div>
+    </nav>
+  );
 }

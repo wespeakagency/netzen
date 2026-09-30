@@ -167,6 +167,33 @@ export function LeadDrawer({ lead, onClose, onUpdateLead }) {
             </div>
           )}
 
+          {onUpdateLead && (
+            <div className="lead-drawer-stage-edit-block">
+              <div className="lead-drawer-stage-edit-head">
+                <span className="lead-drawer-stage-edit-label">Estado del lead</span>
+                {stageStatus === "saving" && (
+                  <span className="lead-drawer-stage-hint">Guardando…</span>
+                )}
+                {stageStatus === "error" && (
+                  <span className="lead-drawer-stage-hint lead-drawer-stage-hint--error">
+                    {stageError}
+                  </span>
+                )}
+              </div>
+              <select
+                className="lead-drawer-stage-select lead-drawer-stage-select--wide"
+                value={lead.lifecycle_stage || "nuevo"}
+                onChange={handleStageChange}
+                disabled={stageStatus === "saving"}
+                aria-label="Cambiar estado del lead"
+              >
+                {Object.entries(STAGE_LABELS).map(([k, label]) => (
+                  <option key={k} value={k}>{label}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <Section title="Contexto de negocio">
             <Field label="País" value={lead.country_code} />
             <Field label="Modelo" value={lead.business_model} />
@@ -190,25 +217,7 @@ export function LeadDrawer({ lead, onClose, onUpdateLead }) {
             </Section>
           )}
 
-          <Section title="Seguimiento">
-            <div className="lead-drawer-field">
-              <div className="lead-drawer-field-label">Estado</div>
-              <div className="lead-drawer-stage-edit">
-                <select
-                  className="lead-drawer-stage-select"
-                  value={lead.lifecycle_stage || "nuevo"}
-                  onChange={handleStageChange}
-                  disabled={stageStatus === "saving" || !onUpdateLead}
-                  aria-label="Cambiar estado del lead"
-                >
-                  {Object.entries(STAGE_LABELS).map(([k, label]) => (
-                    <option key={k} value={k}>{label}</option>
-                  ))}
-                </select>
-                {stageStatus === "saving" && <span className="lead-drawer-stage-hint">Guardando…</span>}
-                {stageStatus === "error" && <span className="lead-drawer-stage-hint lead-drawer-stage-hint--error">{stageError}</span>}
-              </div>
-            </div>
+          <Section title="Metadata">
             <Field label="Creado" value={formatDate(lead.created_at)} />
           </Section>
 
