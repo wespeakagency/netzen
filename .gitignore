@@ -1,11 +1,15 @@
 node_modules
 dist
 standalone
+standalone-dashboard
 entregable
+docs/*
 .DS_Store
+apps-script
+scripts
 *.local
 .env
 .env.*
 !.env.example
+*.md
 
-standalone-dashboard
