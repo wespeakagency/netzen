@@ -7,7 +7,6 @@ import { fetchTouchEvents } from "../api.js";
 import {
   computeScoringBreakdown,
   buildScoringNarrative,
-  buildScoringHighlight,
   tierLabelForScore,
   AXIS_LABELS,
   DIMENSION_ICONS,
@@ -45,11 +44,53 @@ export function LeadDrawer({ lead, onClose, onUpdateLead }) {
   const [showAttribution, setShowAttribution] = useState(false);
   const [showTimeline, setShowTimeline] = useState(true);
   const [showScoreExplain, setShowScoreExplain] = useState(true);
+  const [explainTab, setExplainTab] = useState("why"); // "why" | "answers" | "bars"
   const [phoneCopied, setPhoneCopied] = useState(false);
   const [stageStatus, setStageStatus] = useState("idle"); // idle | saving | error
   const [stageError, setStageError] = useState("");
   const [touchEvents, setTouchEvents] = useState([]);
   const [touchStatus, setTouchStatus] = useState("idle"); // idle | loading | ok | error
+  const [scoringPopoverOpen, setScoringPopoverOpen] = useState(false);
+  const scoringPopoverRef = useRef(null);
+  const scoringHoverTimerRef = useRef(null);
+
+  // Cerrar popover con Escape (para accesibilidad por teclado).
+  useEffect(() => {
+    if (!scoringPopoverOpen) return;
+    const handleKey = (e) => {
+      if (e.key === "Escape") setScoringPopoverOpen(false);
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [scoringPopoverOpen]);
+
+  const openScoringPopover = () => {
+    if (scoringHoverTimerRef.current) {
+      clearTimeout(scoringHoverTimerRef.current);
+      scoringHoverTimerRef.current = null;
+    }
+    setScoringPopoverOpen(true);
+  };
+  const scheduleCloseScoringPopover = () => {
+    if (scoringHoverTimerRef.current) clearTimeout(scoringHoverTimerRef.current);
+    scoringHoverTimerRef.current = setTimeout(() => setScoringPopoverOpen(false), 120);
+  };
+
+  const openScoringDetail = () => {
+    setScoringPopoverOpen(false);
+    setShowScoreExplain(true);
+    setExplainTab("bars");
+    setTimeout(() => {
+      document.getElementById("scoring-anchor")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
+  };
+
+  const scrollToAnchor = (id) => {
+    setScoringPopoverOpen(false);
+    setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
+  };
 
   const handleStageChange = async (e) => {
     const newStage = e.target.value;
@@ -146,6 +187,11 @@ export function LeadDrawer({ lead, onClose, onUpdateLead }) {
             <div className="lead-drawer-title-block">
               <h2 id="lead-drawer-title">{title}</h2>
               {subtitle && <p className="lead-drawer-subtitle">{subtitle}</p>}
+              {(lead.job_title || lead.country_code) && (
+                <p className="lead-drawer-identity">
+                  {[lead.job_title, lead.country_code].filter(Boolean).join(" · ")}
+                </p>
+              )}
             </div>
             <button
               ref={closeBtnRef}
@@ -164,14 +210,40 @@ export function LeadDrawer({ lead, onClose, onUpdateLead }) {
               </span>
             )}
             {lead.score_priority != null && lead.score_priority !== "" && (
-              <span className={`lead-drawer-score-chip lead-drawer-score-chip--${scoreTier}`}>
-                <span className="lead-drawer-score-chip-num">{lead.score_priority}</span>
-              </span>
+              <div
+                className="lead-drawer-scoring-peek"
+                ref={scoringPopoverRef}
+                onMouseEnter={openScoringPopover}
+                onMouseLeave={scheduleCloseScoringPopover}
+                onFocus={openScoringPopover}
+                onBlur={scheduleCloseScoringPopover}
+              >
+                <button
+                  type="button"
+                  className={`lead-drawer-scoring-priority lead-drawer-scoring-priority--sm lead-drawer-scoring-priority--${scoreTier}`}
+                  aria-expanded={scoringPopoverOpen}
+                  aria-haspopup="dialog"
+                  aria-label={`Score de prioridad ${lead.score_priority}. Pasar el mouse para ver desglose.`}
+                >
+                  <span className="lead-drawer-scoring-priority-num">{lead.score_priority}</span>
+                </button>
+                {scoringPopoverOpen && (
+                  <ScoringPeekPopover
+                    lead={lead}
+                    onSeeMore={openScoringDetail}
+                  />
+                )}
+              </div>
             )}
             {lead.lifecycle_stage && (
-              <span className={`lead-drawer-stage-pill lead-drawer-stage-pill--${lead.lifecycle_stage}`}>
+              <button
+                type="button"
+                className={`lead-drawer-stage-pill lead-drawer-stage-pill--${lead.lifecycle_stage} lead-drawer-stage-pill--interactive`}
+                onClick={() => scrollToAnchor("stage-edit-anchor")}
+                title="Cambiar estado"
+              >
                 {STAGE_LABELS[lead.lifecycle_stage] || lead.lifecycle_stage}
-              </span>
+              </button>
             )}
             {aging && (
               <span
@@ -233,7 +305,7 @@ export function LeadDrawer({ lead, onClose, onUpdateLead }) {
           )}
 
           {onUpdateLead && (
-            <div className="lead-drawer-stage-edit-block">
+            <div className="lead-drawer-stage-edit-block" id="stage-edit-anchor">
               <div className="lead-drawer-stage-edit-head">
                 <span className="lead-drawer-stage-edit-label">Estado del lead</span>
                 {stageStatus === "saving" && (
@@ -267,8 +339,6 @@ export function LeadDrawer({ lead, onClose, onUpdateLead }) {
           )}
 
           <Section title="Datos del prospecto">
-            <Field label="Cargo" value={lead.job_title} />
-            <Field label="País" value={lead.country_code} />
             <Field label="Modelo" value={lead.business_model} />
             <Field label="Tamaño de la red" value={lead.network_size} />
             <Field
@@ -279,13 +349,15 @@ export function LeadDrawer({ lead, onClose, onUpdateLead }) {
           {/* Rol, presupuesto, ventana y recursos ya viven en la tab "Respuestas" del "¿Por qué este score?"
               con más contexto (score 0-3 + eje al que aportan). Eliminados de acá para evitar duplicación. */}
 
-          <ScoreExplain
-            lead={lead}
-            open={showScoreExplain}
-            onToggle={() => setShowScoreExplain((v) => !v)}
-          />
-
-          <ScoringBreakdown lead={lead} />
+          <div id="scoring-anchor">
+            <ScoreExplain
+              lead={lead}
+              open={showScoreExplain}
+              onToggle={() => setShowScoreExplain((v) => !v)}
+              tab={explainTab}
+              onTabChange={setExplainTab}
+            />
+          </div>
 
           <Section title="Metadata">
             <Field label="Creado" value={formatDate(lead.created_at)} />
@@ -455,7 +527,7 @@ export function timeSince(dateValue, lifecycleStage) {
   return { label, tier };
 }
 
-function ScoringBreakdown({ lead }) {
+function ScoringPeekPopover({ lead, onSeeMore }) {
   const dims = [
     { key: "alignment", label: "Alineamiento", value: lead.score_alignment },
     { key: "potential", label: "Potencial", value: lead.score_potential },
@@ -463,74 +535,46 @@ function ScoringBreakdown({ lead }) {
     { key: "confidence", label: "Confianza", value: lead.score_confidence },
   ].filter((d) => d.value != null && d.value !== "" && Number.isFinite(Number(d.value)));
 
-  const priority = lead.score_priority;
-  if (dims.length === 0 && (priority == null || priority === "")) return null;
-
-  const priorityTier = getScoreTier(priority);
-  const priorityTierMeta = tierLabelForScore(priority);
-  const confidence = Number(lead.score_confidence);
-  const lowConfidence = Number.isFinite(confidence) && confidence < 60;
-  const highlight = buildScoringHighlight(lead);
-
   return (
-    <section className="lead-drawer-section">
-      <h3 className="lead-drawer-section-title">Scoring</h3>
-      <div className="lead-drawer-section-body">
-        {priority != null && priority !== "" && (
-          <div className="lead-drawer-scoring-header">
-            <div className={`lead-drawer-scoring-priority lead-drawer-scoring-priority--${priorityTier}`}>
-              <span className="lead-drawer-scoring-priority-num">{priority}</span>
-              <span className="lead-drawer-scoring-priority-label">Prioridad</span>
-            </div>
-            <div className="lead-drawer-scoring-header-body">
-              <div className={`lead-drawer-scoring-verdict lead-drawer-scoring-verdict--${priorityTierMeta.tier}`}>
-                {priorityTierMeta.label}
-              </div>
-              {highlight && (
-                <p className="lead-drawer-scoring-highlight">{highlight}</p>
-              )}
-              <p className="lead-drawer-scoring-formula">
-                50% Alineamiento · 35% Potencial · 15% Intención
-              </p>
-            </div>
-          </div>
-        )}
-        {dims.length > 0 && (
-          <div className="lead-drawer-scoring-bars">
-            {dims.map((d) => {
-              const num = Number(d.value);
-              const tier = getScoreTier(num);
-              const tierMeta = tierLabelForScore(num, d.key);
-              const width = Math.max(0, Math.min(100, num));
-              return (
-                <div key={d.key} className="lead-drawer-score-bar">
-                  <div className="lead-drawer-score-bar-head">
-                    <span className="lead-drawer-score-bar-label">{d.label}</span>
-                    <div className="lead-drawer-score-bar-value">
-                      <span className={`lead-drawer-score-bar-tier lead-drawer-score-bar-tier--${tierMeta.tier}`}>
-                        {tierMeta.label}
-                      </span>
-                      <span className={`lead-drawer-score-bar-num lead-drawer-score-bar-num--${tier}`}>{num}</span>
-                    </div>
-                  </div>
-                  <div className="lead-drawer-score-bar-track">
-                    <div
-                      className={`lead-drawer-score-bar-fill lead-drawer-score-bar-fill--${tier}`}
-                      style={{ width: `${width}%` }}
-                    />
-                  </div>
+    <div className="lead-drawer-scoring-popover" role="dialog" aria-label="Desglose del score">
+      <div className="lead-drawer-scoring-popover-title">Desglose del score</div>
+      {dims.length === 0 ? (
+        <p className="lead-drawer-scoring-popover-empty">Sin datos de scoring por dimensión.</p>
+      ) : (
+        <div className="lead-drawer-scoring-bars lead-drawer-scoring-bars--compact">
+          {dims.map((d) => {
+            const num = Number(d.value);
+            const tier = getScoreTier(num);
+            const tierMeta = tierLabelForScore(num, d.key);
+            const width = Math.max(0, Math.min(100, num));
+            return (
+              <div key={d.key} className="lead-drawer-score-bar">
+                <div className="lead-drawer-score-bar-head">
+                  <span className="lead-drawer-score-bar-label">{d.label}</span>
+                  <span className={`lead-drawer-score-bar-tier lead-drawer-score-bar-tier--${tierMeta.tier}`}>
+                    {tierMeta.label}
+                  </span>
+                  <span className={`lead-drawer-score-bar-num lead-drawer-score-bar-num--${tier}`}>{num}</span>
                 </div>
-              );
-            })}
-          </div>
-        )}
-        {lowConfidence && (
-          <p className="lead-drawer-scoring-note">
-            Score preliminar, confianza baja ({confidence}%)
-          </p>
-        )}
-      </div>
-    </section>
+                <div className="lead-drawer-score-bar-track">
+                  <div
+                    className={`lead-drawer-score-bar-fill lead-drawer-score-bar-fill--${tier}`}
+                    style={{ width: `${width}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <button
+        type="button"
+        className="lead-drawer-scoring-popover-cta"
+        onClick={onSeeMore}
+      >
+        Ver detalle
+      </button>
+    </div>
   );
 }
 
@@ -578,20 +622,36 @@ function TouchTimeline({ events, status }) {
   );
 }
 
-function ScoreExplain({ lead, open, onToggle }) {
+function ScoreExplain({ lead, open, onToggle, tab, onTabChange }) {
   const items = computeScoringBreakdown(lead);
   const intent = Number(lead.score_intent);
   const hasIntent = Number.isFinite(intent) && intent !== 0;
   const formType = getFormType(lead);
   const narrative = buildScoringNarrative(lead, items);
-  const [tab, setTab] = useState("why"); // "why" | "answers"
 
-  if (items.length === 0 && !hasIntent && !narrative) return null;
+  const bars = [
+    { key: "alignment", label: "Alineamiento", value: lead.score_alignment },
+    { key: "potential", label: "Potencial", value: lead.score_potential },
+    { key: "intent", label: "Intención", value: lead.score_intent },
+    { key: "confidence", label: "Confianza", value: lead.score_confidence },
+  ].filter((d) => d.value != null && d.value !== "" && Number.isFinite(Number(d.value)));
+
+  if (items.length === 0 && !hasIntent && !narrative && bars.length === 0) return null;
 
   const hasWhy = !!narrative;
   const hasAnswers = items.length > 0 || hasIntent;
-  const showTabs = hasWhy && hasAnswers;
-  const activeTab = !showTabs ? (hasWhy ? "why" : "answers") : tab;
+  const hasBars = bars.length > 0;
+  const availableTabs = [
+    hasWhy && "why",
+    hasAnswers && "answers",
+    hasBars && "bars",
+  ].filter(Boolean);
+  const showTabs = availableTabs.length > 1;
+  const activeTab = availableTabs.includes(tab) ? tab : availableTabs[0];
+  const setTab = (t) => onTabChange?.(t);
+
+  const confidence = Number(lead.score_confidence);
+  const lowConfidence = Number.isFinite(confidence) && confidence < 60;
 
   return (
     <section className="lead-drawer-section">
@@ -608,25 +668,77 @@ function ScoreExplain({ lead, open, onToggle }) {
         <div className="lead-drawer-section-body">
           {showTabs && (
             <div className="lead-drawer-explain-tabs" role="tablist">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activeTab === "why"}
-                className={`lead-drawer-explain-tab ${activeTab === "why" ? "is-active" : ""}`}
-                onClick={() => setTab("why")}
-              >
-                Por qué
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activeTab === "answers"}
-                className={`lead-drawer-explain-tab ${activeTab === "answers" ? "is-active" : ""}`}
-                onClick={() => setTab("answers")}
-              >
-                Respuestas
-              </button>
+              {hasWhy && (
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === "why"}
+                  className={`lead-drawer-explain-tab ${activeTab === "why" ? "is-active" : ""}`}
+                  onClick={() => setTab("why")}
+                >
+                  Por qué
+                </button>
+              )}
+              {hasAnswers && (
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === "answers"}
+                  className={`lead-drawer-explain-tab ${activeTab === "answers" ? "is-active" : ""}`}
+                  onClick={() => setTab("answers")}
+                >
+                  Respuestas
+                </button>
+              )}
+              {hasBars && (
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === "bars"}
+                  className={`lead-drawer-explain-tab ${activeTab === "bars" ? "is-active" : ""}`}
+                  onClick={() => setTab("bars")}
+                >
+                  Barras
+                </button>
+              )}
             </div>
+          )}
+
+          {activeTab === "bars" && hasBars && (
+            <>
+              <div className="lead-drawer-scoring-bars">
+                {bars.map((d) => {
+                  const num = Number(d.value);
+                  const tier = getScoreTier(num);
+                  const tierMeta = tierLabelForScore(num, d.key);
+                  const width = Math.max(0, Math.min(100, num));
+                  return (
+                    <div key={d.key} className="lead-drawer-score-bar">
+                      <div className="lead-drawer-score-bar-head">
+                        <span className="lead-drawer-score-bar-label">{d.label}</span>
+                        <div className="lead-drawer-score-bar-value">
+                          <span className={`lead-drawer-score-bar-tier lead-drawer-score-bar-tier--${tierMeta.tier}`}>
+                            {tierMeta.label}
+                          </span>
+                          <span className={`lead-drawer-score-bar-num lead-drawer-score-bar-num--${tier}`}>{num}</span>
+                        </div>
+                      </div>
+                      <div className="lead-drawer-score-bar-track">
+                        <div
+                          className={`lead-drawer-score-bar-fill lead-drawer-score-bar-fill--${tier}`}
+                          style={{ width: `${width}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {lowConfidence && (
+                <p className="lead-drawer-scoring-note">
+                  Score preliminar, confianza baja ({confidence}%)
+                </p>
+              )}
+            </>
           )}
 
           {activeTab === "why" && narrative && (

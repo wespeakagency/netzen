@@ -1669,6 +1669,13 @@ body {
   line-height: 1.4;
 }
 
+.lead-drawer-identity {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--nz-text-soft);
+  line-height: 1.4;
+}
+
 .lead-drawer-close {
   flex-shrink: 0;
   width: 32px;
@@ -2033,6 +2040,98 @@ body {
 .lead-drawer-scoring-priority--low { background: #ffedd5; color: #7c2d12; border-color: #fdba74; }
 .lead-drawer-scoring-priority--cold { background: #fee2e2; color: #7f1d1d; border-color: #fca5a5; }
 .lead-drawer-scoring-priority--none { background: var(--nz-surface-alt); color: var(--nz-text-muted); border-color: var(--nz-border); }
+
+/* Variante small para uso en el header (button-shaped, clickeable). */
+.lead-drawer-scoring-priority--sm {
+  width: 46px;
+  height: 46px;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.lead-drawer-scoring-priority--sm .lead-drawer-scoring-priority-num { font-size: 20px; font-weight: 700; line-height: 1; }
+.lead-drawer-scoring-priority--sm .lead-drawer-scoring-priority-label { display: none; }
+.lead-drawer-scoring-priority--sm:hover { transform: scale(1.05); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.lead-drawer-scoring-priority--sm:focus-visible { outline: 2px solid var(--nz-red); outline-offset: 2px; }
+
+/* Wrapper del popover del score peek. */
+.lead-drawer-scoring-peek {
+  position: relative;
+  display: inline-flex;
+}
+
+.lead-drawer-scoring-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-40%);
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  background: var(--nz-surface);
+  border: 1px solid var(--nz-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 14px;
+  z-index: 20;
+  animation: lead-drawer-fade-in 120ms ease-out;
+}
+
+.lead-drawer-scoring-popover-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--nz-text-muted);
+  margin-bottom: 10px;
+}
+
+.lead-drawer-scoring-popover-empty {
+  font-size: 12px;
+  color: var(--nz-text-muted);
+  font-style: italic;
+  margin: 0 0 10px;
+}
+
+.lead-drawer-scoring-bars--compact {
+  gap: 8px;
+  margin-top: 0;
+}
+
+.lead-drawer-scoring-popover-cta {
+  margin-top: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--nz-border-strong);
+  background: var(--nz-surface-alt);
+  color: var(--nz-text);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.lead-drawer-scoring-popover-cta:hover {
+  background: var(--nz-red-soft);
+  border-color: var(--nz-red);
+  color: var(--nz-red);
+}
+
+/* Stage pill clickeable (act as scroll-to-anchor). */
+.lead-drawer-stage-pill--interactive {
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.12s;
+}
+.lead-drawer-stage-pill--interactive:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+.lead-drawer-stage-pill--interactive:focus-visible {
+  outline: 2px solid var(--nz-red);
+  outline-offset: 2px;
+}
 
 .lead-drawer-scoring-header-body {
   display: flex;
