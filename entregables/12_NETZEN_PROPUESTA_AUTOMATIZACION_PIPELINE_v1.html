@@ -1,0 +1,289 @@
+<!doctype html><html lang="es-MX"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Netzen · Propuesta Kapso · Automatización por WhatsApp</title><style>
+:root{--red:#aa0000;--ink:#18202c;--muted:#657083;--line:#e4e7ec;--paper:#fff;--soft:#f5f6f8;--green:#168a4a;--blue:#2459bd;--amber:#b85b00}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:var(--ink);background:#eef0f3;font-family:Lato,Arial,sans-serif;line-height:1.58}.page{max-width:1440px;margin:auto;background:#fff;min-height:100vh}.layout{display:grid;grid-template-columns:280px minmax(0,1fr)}aside{position:sticky;top:0;height:100vh;padding:34px 26px;background:#f7f7f8;border-right:1px solid var(--line);overflow:auto}.brand{display:flex;align-items:center;gap:11px;margin-bottom:40px}.brandmark{width:28px;height:28px;border:7px solid var(--red);transform:rotate(45deg)}.brand strong{font-family:Montserrat,Arial,sans-serif}.badge{display:inline-flex;padding:6px 10px;border-radius:99px;background:#fce8e8;color:var(--red);font:700 10px Montserrat,Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase}nav{display:grid;gap:4px;margin-top:18px}nav a{padding:8px 10px;color:#525d6d;text-decoration:none;font-size:13px;font-weight:700;border-left:2px solid transparent}nav a:hover{color:var(--red);border-color:var(--red);background:white}.side-note{margin-top:30px;padding-top:20px;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}main{padding:64px clamp(30px,6vw,92px) 100px;min-width:0}.hero{padding-bottom:58px;border-bottom:1px solid var(--line)}.kicker{font:800 11px Montserrat,Arial,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--red)}h1,h2,h3{font-family:Montserrat,Arial,sans-serif;line-height:1.08;margin:0}h1{font-size:clamp(40px,5.5vw,76px);max-width:900px;margin:14px 0 22px;letter-spacing:-.045em}h2{font-size:clamp(28px,3.2vw,42px);letter-spacing:-.03em;margin:10px 0 16px}h3{font-size:17px;margin-bottom:10px}.dot{color:var(--red)}.rule{width:30px;height:2px;background:var(--red);margin:18px 0 20px}.lede{max-width:810px;color:var(--muted);font-size:18px}.section{padding:60px 0;border-bottom:1px solid var(--line)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.card{border:1px solid var(--line);border-radius:14px;padding:22px;background:#fff}.card.featured{border:2px solid var(--red);box-shadow:0 14px 34px rgba(100,0,0,.09)}.card h3{font-family:Montserrat,Arial,sans-serif;color:#0b1220}.card.ok{border-left:4px solid var(--green)}.card.warn{border-left:4px solid var(--amber)}.price{font:800 44px Montserrat,Arial,sans-serif;letter-spacing:-.04em;margin:10px 0}.price small{font-size:13px;letter-spacing:0;color:var(--muted)}ul{padding-left:20px}.check{list-style:none;padding:0}.check li{padding:8px 0 8px 28px;position:relative;border-bottom:1px dashed var(--line);font-size:14.5px}.check li:before{content:'✓';position:absolute;left:0;color:var(--green);font-weight:900}.callout{border-left:4px solid var(--red);padding:18px 22px;background:#fff7f7;border-radius:0 12px 12px 0;margin-top:16px}.callout.ok{border-color:var(--green);background:#eef9f1}.callout.blue{border-color:var(--blue);background:#eef3fa}.callout.amber{border-color:var(--amber);background:#fff6e8}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:14px}table{width:100%;border-collapse:collapse;min-width:640px}th,td{padding:12px 15px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top;font-size:14px}th{font:800 10px Montserrat,Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase;background:#f7f8fa;color:#626d7d}td code{background:#f3f4f6;padding:2px 7px;border-radius:5px;font-size:12px;color:#aa0000}.step{counter-increment:s;display:grid;grid-template-columns:42px 1fr;gap:16px;align-items:start;padding:20px;border:1px solid var(--line);border-radius:14px;margin-bottom:12px}.steps{counter-reset:s}.step:before{content:counter(s);display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:var(--red);color:white;font:800 16px Montserrat}.pipe{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:20px}.stage{border:1px solid var(--line);border-radius:12px;padding:14px 12px;background:#fff}.stage .pill{display:inline-block;font:800 10px Montserrat,Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase;background:#eef0f3;color:#525d6d;padding:3px 8px;border-radius:99px;margin-bottom:8px}.stage.new .pill{background:#eef0f3;color:#525d6d}.stage.cont .pill{background:#fff2d6;color:#b85b00}.stage.cal .pill{background:#e1efff;color:#2459bd}.stage.prop .pill{background:#f5e7fa;color:#6b2d91}.stage.cie .pill{background:#e9f5ea;color:#168a4a}.stage h4{font-family:Montserrat,Arial,sans-serif;font-size:13px;margin:0 0 6px}.stage p{font-size:11.5px;color:#525d6d;margin:0;line-height:1.4}.signal{background:#0b1220;color:#e2e8f0;padding:16px 20px;border-radius:10px;font-family:'SF Mono',Menlo,Consolas,monospace;font-size:12.5px;overflow-x:auto;line-height:1.6}.signal .k{color:#ff7a7a}.signal .n{color:#89d185}.signal .c{color:#89b8ff}.chat-sim{background:#eef2f5;border-radius:12px;padding:16px;max-width:360px}.chat-msg{background:#fff;border-radius:10px;padding:10px 14px;margin:6px 0;font-size:13px;line-height:1.4;max-width:260px}.chat-msg.them{background:#dcf8c6;margin-left:auto}.chat-menu{background:#fff;border-radius:10px;padding:10px 14px;margin:6px 0;font-size:13px;max-width:260px}.chat-menu .opt{padding:6px 0;border-top:1px dashed #e4e7ec;color:#2459bd;cursor:default}.chat-menu .opt:first-child{border-top:none}.fine{font-size:12px;color:var(--muted)}footer{padding:30px 0;color:var(--muted);font-size:12px}@media(max-width:950px){.layout{display:block}aside{position:relative;height:auto}.grid,.grid-3,.pipe{grid-template-columns:1fr}main{padding:40px 22px}}@media print{body{background:#fff}.page{max-width:none}.layout{display:block}aside{display:none}main{padding:25px}.section{break-inside:avoid}}
+</style></head><body><div class="page"><div class="layout">
+
+<aside>
+  <div class="brand"><span class="brandmark"></span><div><strong>Netzen</strong><div class="fine">Propuesta técnica</div></div></div>
+  <span class="badge">Automatización · Kapso</span>
+  <nav>
+    <a href="#contexto">Contexto</a>
+    <a href="#que-agrega">Qué agrega Kapso</a>
+    <a href="#demo">Demo del flujo</a>
+    <a href="#arquitectura">Arquitectura</a>
+    <a href="#alcance">Alcance e implementación</a>
+    <a href="#inversion">Inversión</a>
+    <a href="#manoamano">Mano a mano</a>
+    <a href="#siguiente">Siguiente paso</a>
+  </nav>
+  <div class="side-note">Documento interno · Importes en MXN · Versión 1.0 · Branch v2.1-delivery · Seguimiento @Arostegui Maranto.</div>
+</aside>
+
+<main>
+  <header class="hero">
+    <div class="kicker">Propuesta técnica · Kapso</div>
+    <h1>Automatizar el pipeline con WhatsApp sin perder control<span class="dot">.</span></h1>
+    <div class="rule"></div>
+    <p class="lede">Propongo cómo el sistema puede identificar automáticamente cuándo un prospecto fue contactado, calificado o avanzó al cierre, usando una conversación por WhatsApp con menú controlado. El trigger de envío de propuesta HTML queda disparado automáticamente cuando el prospecto llega a la etapa correspondiente. Se monta sobre el backend v2.1 ya entregado, no empieza de cero.</p>
+  </header>
+
+  <section class="section" id="contexto">
+    <div class="kicker">Contexto</div>
+    <h2>De dónde parte esta propuesta<span class="dot">.</span></h2>
+    <div class="grid">
+      <div>
+        <p>Hoy el backend ya tiene todo lo necesario para que un canal externo dispare automatizaciones:</p>
+        <ul class="check">
+          <li>Endpoint firmado por token que recibe mutaciones autorizadas.</li>
+          <li>Modelo de auditoría en <code>02_LEAD_AUDIT</code> que registra cada cambio.</li>
+          <li>Hoja <code>02_TOUCH_EVENTS</code> que guarda touch events por canal.</li>
+          <li>Handler <code>sendProposal</code> que envía la propuesta HTML cuando se le pide.</li>
+          <li>Avance automático de Nuevo a Contactado por apertura de correo (ya funciona).</li>
+        </ul>
+        <p>Lo que falta es el canal que toque al prospecto por WhatsApp y traduzca sus respuestas en cambios de etapa. Eso es exactamente lo que agrega Kapso.</p>
+      </div>
+      <div class="card featured">
+        <span class="badge">Punto importante</span>
+        <h3 style="margin-top:14px">No se reconstruye nada</h3>
+        <p>Kapso se apoya en la base ya entregada. No requiere rehacer el backend ni la auditoría. Por eso tiene sentido como siguiente paso: la arquitectura está lista para recibirlo y el precio del módulo refleja solo el trabajo específico del canal WhatsApp.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="que-agrega">
+    <div class="kicker">Qué agrega Kapso</div>
+    <h2>Las 4 piezas del módulo<span class="dot">.</span></h2>
+    <div class="grid" style="margin-top:14px">
+      <div class="card ok">
+        <h3>1. WhatsApp con menú controlado</h3>
+        <p class="fine">El prospecto recibe mensajes con opciones predefinidas (no texto libre). Elige "sí me interesa", "mandame info", "no es momento", "ya firmé", etc. El menú lo define Netzen según los criterios reales del pipeline y me lo entregan como insumo para implementarlo.</p>
+      </div>
+      <div class="card ok">
+        <h3>2. Webhook firmado hacia Apps Script</h3>
+        <p class="fine">La respuesta del prospecto llega como webhook al backend existente. Validación de firma HMAC para evitar que un tercero dispare cambios de estado falsos.</p>
+      </div>
+      <div class="card ok">
+        <h3>3. Actualización automática del estatus</h3>
+        <p class="fine">Según la opción del menú, el sistema avanza al prospecto en el pipeline: "me interesa" → Contactado real, confirma reunión → Calificado, pide propuesta → desbloquea Propuesta.</p>
+      </div>
+      <div class="card ok">
+        <h3>4. Envío HTML disparado al llegar a Propuesta</h3>
+        <p class="fine">Cuando el estado llega a Propuesta, se activa automáticamente el <code>sendProposal</code> del backend ya entregado. Se envía el HTML diseñado, queda en auditoría y en el historial del prospecto.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="demo">
+    <div class="kicker">Demo del flujo</div>
+    <h2>Cómo avanza un prospecto, paso a paso<span class="dot">.</span></h2>
+    <p class="lede">El sistema detecta señales reales del canal y mueve el prospecto a la etapa correspondiente. El equipo comercial sigue teniendo control manual, pero deja de ser el único mecanismo.</p>
+
+    <div class="pipe">
+      <div class="stage new"><span class="pill">Nuevo</span><h4>Llega al CRM</h4><p>Entrada por formulario, scoreado automáticamente.</p></div>
+      <div class="stage cont"><span class="pill">Contactado</span><h4>WhatsApp iniciado</h4><p>Kapso envía el primer mensaje, el prospecto abre y responde.</p></div>
+      <div class="stage cal"><span class="pill">Calificado</span><h4>Confirma interés</h4><p>Elige la opción "me interesa, agendemos" en el menú.</p></div>
+      <div class="stage prop"><span class="pill">Propuesta</span><h4>Recibe oferta</h4><p>Al desbloquear la etapa, se dispara el envío HTML automático.</p></div>
+      <div class="stage cie"><span class="pill">Cierre</span><h4>Decide</h4><p>Confirma por menú ("acepto", "lo pienso", "no es momento").</p></div>
+    </div>
+
+    <h3 style="margin-top:40px">Ejemplo de conversación por WhatsApp</h3>
+    <div class="grid" style="margin-top:14px">
+      <div class="chat-sim">
+        <div class="chat-msg">Hola, soy del equipo de Netzen. Recibimos tu solicitud sobre nuestro CRM. ¿Qué te interesa hacer?</div>
+        <div class="chat-menu">
+          <div class="opt">1 · Quiero una demo</div>
+          <div class="opt">2 · Quiero más información</div>
+          <div class="opt">3 · Más adelante</div>
+        </div>
+        <div class="chat-msg them">1</div>
+        <div class="chat-msg">Perfecto. Te envío la propuesta a tu correo en unos segundos y agendamos la demo. ¿Confirmás?</div>
+        <div class="chat-menu">
+          <div class="opt">1 · Sí, mandámela</div>
+          <div class="opt">2 · Primero quiero hablar</div>
+        </div>
+        <div class="chat-msg them">1</div>
+      </div>
+      <div class="signal">
+        <span class="c">// Lo que sucede detrás del menú</span><br>
+        prospecto responde "1" (quiero demo)<br>
+        &nbsp;&nbsp;→ <span class="k">webhook</span>(Kapso) → Apps Script<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ lifecycle_stage = <span class="n">"calificado"</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ 02_TOUCH_EVENTS += "whatsapp_menu"<br>
+        <br>
+        prospecto confirma "1" (mandámela)<br>
+        &nbsp;&nbsp;→ <span class="k">webhook</span> → Apps Script<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ lifecycle_stage = <span class="n">"propuesta"</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ <span class="n">handleSendProposal_()</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ MailApp.sendEmail(HTML)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ appendLeadAudit_("send_proposal")
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="arquitectura">
+    <div class="kicker">Arquitectura</div>
+    <h2>Cómo se conecta con el backend v2.1<span class="dot">.</span></h2>
+    <div class="grid">
+      <div>
+        <p>Kapso agrega 3 componentes al sistema existente:</p>
+        <ul class="check">
+          <li>Un nuevo handler <code>handleWebhookSignal_</code> en Apps Script que recibe eventos de Kapso y los traduce en avances de etapa.</li>
+          <li>Validación de firma HMAC con secret compartido entre Kapso y Apps Script.</li>
+          <li>Mapeo de opciones de menú a cambios de estado (hoja o constante configurable).</li>
+        </ul>
+        <p>Reutiliza, sin reescribir:</p>
+        <ul class="check">
+          <li>El handler <code>sendProposal</code> para disparar envío HTML automático.</li>
+          <li>La auditoría en <code>02_LEAD_AUDIT</code>.</li>
+          <li>La hoja <code>02_TOUCH_EVENTS</code> para historial por canal.</li>
+          <li>El modelo de datos de <code>01_LEADS</code> con sus etapas y validaciones.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <span class="badge">Dependencias externas</span>
+        <h3 style="margin-top:14px">Qué sí depende de Meta</h3>
+        <ul style="padding-left:18px;font-size:14px;color:#525d6d">
+          <li>Aprobación de plantillas de WhatsApp (reloj externo, no depende de mí).</li>
+          <li>Conexión del número de WhatsApp Business al API de Meta.</li>
+          <li>Costos de WhatsApp Business API (facturados por Meta, no incluidos).</li>
+        </ul>
+        <p class="fine" style="margin-top:12px">Por eso el primer pago cubre el envío de plantillas a Meta: así el reloj externo corre en paralelo al desarrollo y no al final.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="alcance">
+    <div class="kicker">Alcance e implementación</div>
+    <h2>Qué se construye, en qué orden<span class="dot">.</span></h2>
+    <p class="lede">Dos semanas de desarrollo activo, con hitos semanales verificables. El reloj externo (aprobación de plantillas de Meta) corre en paralelo.</p>
+
+    <div class="steps" style="margin-top:28px">
+      <div class="step">
+        <div>
+          <h3>Semana 0 · Insumos de alcance (antes de autorizar)</h3>
+          <p>Netzen entrega el flujo conversacional ya definido: menús por etapa, textos de plantillas, fallbacks y criterios de avance de estatus. Yo recibo ese documento como input y arranco la implementación.</p>
+          <p class="fine">Entregable del lado de Netzen: documento de flujo conversacional firmado internamente. <strong>Sin costo de mi lado</strong>. Es la condición para arrancar y poder mandar las plantillas a Meta cuanto antes.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3>Semana 1 · Setup + plantillas a Meta</h3>
+          <p>Plantillas enviadas a Meta para aprobación (reloj externo activo). Configuración del número de WhatsApp. Conexión del webhook. Handler <code>handleWebhookSignal_</code> en Apps Script con validación HMAC.</p>
+          <p class="fine">Entregable: endpoint funcional + plantillas en revisión por Meta.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3>Semana 2 · Reglas de menú + QA + liberación</h3>
+          <p>Mapeo de cada opción de menú a su cambio de estado. Trigger automático de <code>sendProposal</code> al llegar a Propuesta. QA con casos reales. Documentación + capacitación al equipo.</p>
+          <p class="fine">Entregable: loop end-to-end funcionando, equipo capacitado. Depende de la aprobación de plantillas por Meta para liberación completa.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:24px">
+      <strong>Qué NO incluye este módulo.</strong>
+      <ul style="margin:8px 0 0 0;padding-left:18px">
+        <li><strong>Costos de servicios de terceros</strong> → Meta, WhatsApp Business API, Kapso, correo transaccional.</li>
+        <li><strong>Campañas masivas o nutrición multi-touch</strong> → territorio de marketing, no de este módulo.</li>
+        <li><strong>Integración con la plataforma interna del equipo comercial</strong> → depende de que Netzen destrabe el acceso internamente y defina qué información se puede exponer.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section" id="inversion">
+    <div class="kicker">Inversión</div>
+    <h2>$12,000 en 2 pagos de $6,000<span class="dot">.</span></h2>
+    <div class="grid" style="margin-top:28px">
+      <article class="card featured">
+        <span class="badge">Pago 1</span>
+        <h3 style="margin-top:14px">$6,000 al autorizar</h3>
+        <ul class="check">
+          <li>Flujo conversacional recibido de Netzen (ya definido internamente).</li>
+          <li>Plantillas enviadas a Meta (empieza el reloj externo).</li>
+          <li>Webhook y número configurados.</li>
+          <li>Handler <code>handleWebhookSignal_</code> deployado.</li>
+        </ul>
+      </article>
+      <article class="card featured">
+        <span class="badge">Pago 2</span>
+        <h3 style="margin-top:14px">$6,000 contra liberación</h3>
+        <ul class="check">
+          <li>Loop end-to-end funcionando: WhatsApp → menú → estatus → Propuesta → HTML.</li>
+          <li>QA con casos reales + documentación.</li>
+          <li>Sesión de capacitación con el equipo.</li>
+          <li>Depende de aprobación de plantillas por Meta.</li>
+        </ul>
+      </article>
+    </div>
+
+    <div class="callout blue" style="margin-top:24px">
+      <strong>Pagos atados a hitos, no a fechas.</strong>
+      <p>Si Meta demora las plantillas, el pago 2 no se dispara hasta que el loop end-to-end esté funcionando. Netzen no paga por "estar esperando a Meta": paga por el entregable real.</p>
+    </div>
+
+    <div class="callout" style="margin-top:16px">
+      <strong>Qué justifica el precio.</strong>
+      <p>El precio refleja únicamente el trabajo nuevo del módulo Kapso: implementación del flujo entregado por Netzen, configuración de Kapso y Meta, handler nuevo con validación de firma, mapeo de reglas, QA y documentación. No incluye el backend ni la automatización interna, porque esos ya están pagados en el acuerdo anterior.</p>
+    </div>
+  </section>
+
+  <section class="section" id="manoamano">
+    <div class="kicker">Mano a mano</div>
+    <h2>Siguiente implementación: $8,000<span class="dot">.</span></h2>
+    <p>Si querés replicar este módulo Kapso a otra operación propia o venderlo a un cliente nuevo, el setup mano a mano cuesta <strong>$8,000</strong>. La ingeniería ya está hecha, las plantillas de Meta aprobadas sirven como patrón para la nueva operación.</p>
+    <div class="table-wrap" style="margin-top:14px">
+      <table>
+        <thead><tr><th>Modalidad</th><th>Precio</th><th>Pagos</th><th>Cuándo aplica</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Primera implementación</strong></td><td>$12,000</td><td>$6,000 + $6,000</td><td>El módulo que se cotiza en este documento.</td></tr>
+          <tr style="background:#fff7f7"><td><strong>Siguiente mano a mano</strong></td><td><strong>$8,000</strong></td><td>$4,000 + $4,000</td><td>Replicar a otra operación o cliente nuevo con la misma arquitectura.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout ok" style="margin-top:20px">
+      <strong>Lógica del mano a mano.</strong>
+      <p>$8,000 por pieza, sin negociación. Primera vez se paga la ingeniería completa (handler, validaciones, reglas, pruebas, documentación). En el mano a mano esa ingeniería ya está hecha y solo se adapta el flujo conversacional al nuevo contexto. No cobro dos veces el mismo trabajo.</p>
+    </div>
+  </section>
+
+  <section class="section" id="siguiente">
+    <div class="kicker">Siguiente paso</div>
+    <h2>Qué necesito recibir para arrancar<span class="dot">.</span></h2>
+    <p>Esta propuesta avanza cuando Netzen me entregue los insumos definidos internamente. Yo no participo en la definición del flujo conversacional ni en la coordinación con el equipo comercial del cliente: ese trabajo lo resuelve Netzen y me pasa el resultado como input para implementar.</p>
+    <div class="grid" style="margin-top:20px">
+      <div class="card">
+        <h3>Lo que Netzen me entrega</h3>
+        <ul style="padding-left:18px;font-size:13px;color:#525d6d">
+          <li>Documento de flujo conversacional firmado internamente: menús por etapa, textos de mensajes, fallbacks.</li>
+          <li>Criterios de "contactado real", "calificado" y "cerrado perdido" ya acordados con el equipo comercial.</li>
+          <li>Número de WhatsApp Business disponible para conectar.</li>
+          <li>Autorización comercial del módulo y correo de contacto para notificaciones.</li>
+          <li>Horarios de atención y volumen esperado de conversaciones.</li>
+        </ul>
+      </div>
+      <div class="card featured">
+        <h3>Lo que entrego yo</h3>
+        <ul style="padding-left:18px;font-size:13px;color:#525d6d">
+          <li>Implementación del flujo conversacional recibido en Kapso.</li>
+          <li>Envío de plantillas a Meta para aprobación en semana 1.</li>
+          <li>Handler <code>handleWebhookSignal_</code> con validación de firma HMAC.</li>
+          <li>Mapeo de reglas de menú a cambios de estado + trigger automático del envío HTML.</li>
+          <li>QA con casos reales + documentación técnica.</li>
+          <li>Timeline con fechas específicas una vez autorizado.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout ok" style="margin-top:28px">
+      <strong>Compromiso.</strong>
+      <p>Con el documento de flujo entregado por Netzen y las plantillas enviadas a Meta en semana 1, el módulo está liberado en 2 semanas más la ventana de aprobación de Meta (típicamente 3 a 10 días hábiles).</p>
+    </div>
+    <div class="callout blue" style="margin-top:16px">
+      <strong>Separación de responsabilidades.</strong>
+      <p>El diseño del flujo conversacional, la coordinación con el equipo comercial y la validación de criterios con usuarios finales son responsabilidad de Netzen. Mi rol es técnico: recibo el flujo definido y lo implemento. Esta separación mantiene el precio competitivo y evita que el proyecto se trabe por coordinación con terceros.</p>
+    </div>
+  </section>
+
+  <footer>Netzen · Propuesta técnica · Automatización por WhatsApp con Kapso · Versión 1.0 · Documento interno · Seguimiento: @Arostegui Maranto · Origen: Checkpoint Comercial Netzen</footer>
+</main>
+
+</div></div></body></html>
