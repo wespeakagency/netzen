@@ -246,15 +246,26 @@ export const CheckLine = ({ children }) => (
   <div className="checkline"><span className="ic"><Icon name="Check" size={16} strokeWidth={2.6} /></span><span>{children}</span></div>
 );
 
-export function ConsentLine({ compact = false, style }) {
+export function ConsentLine({ compact = false, style, checked, onChange, error, name = "consent" }) {
   const id = useId();
+  const errorId = `${id}-error`;
   return (
-    <div className={`consent-line ${compact ? "consent-line--compact" : ""}`} style={style}>
-      <input id={id} type="checkbox" required />
+    <div className={`consent-line ${compact ? "consent-line--compact" : ""} ${error ? "consent-line--error" : ""}`} style={style}>
+      <input
+        id={id}
+        name={name}
+        type="checkbox"
+        checked={!!checked}
+        onChange={(e) => onChange?.(e.target.checked)}
+        aria-invalid={error ? "true" : undefined}
+        aria-describedby={error ? errorId : undefined}
+        required
+      />
       <label htmlFor={id}>
         Acepto el tratamiento de mis datos conforme al <Link to="/legal/privacidad">aviso de privacidad</Link> y los{" "}
         <Link to="/legal/terminos">términos y condiciones</Link>.
       </label>
+      {error && <span id={errorId} className="consent-line__error" role="alert">{error}</span>}
     </div>
   );
 }

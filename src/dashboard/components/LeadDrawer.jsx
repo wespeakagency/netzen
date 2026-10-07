@@ -4,7 +4,7 @@ import {
   Users, Wallet, CalendarClock, Wrench, BarChart3, Sparkles, HelpCircle,
   Archive, ArchiveRestore, Save, ShieldAlert, ArrowRight, ExternalLink,
 } from "lucide-react";
-import { fetchTouchEvents } from "../api.js";
+import { fetchTouchEvents, logContactFromDashboard } from "../api.js";
 import { BUSINESS_MODELS } from "../../lib/leadCatalogs.js";
 import { PAISES, detectCountryFromPhone, replaceLadaInPhone, getLada } from "../../lib/paisesLadas.js";
 import {
@@ -59,7 +59,7 @@ const EDIT_FIELD_SPANS = {
 
 const isArchived = (lead) => /\[\[CRM_ARCHIVE:v1\|/.test(String(lead?.flags || ""));
 
-export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onEditLead, onArchiveLead, onRestoreLead }) {
+export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onPatchLead, onEditLead, onArchiveLead, onRestoreLead }) {
   const closeBtnRef = useRef(null);
   const [showAttribution, setShowAttribution] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
@@ -135,6 +135,31 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onEditL
     }
   };
   const handleStageChange = (e) => changeStage(e.target.value);
+
+  const handleContactClick = (channel) => {
+    const leadId = lead?.lead_id;
+    if (!leadId) return;
+    // Fire-and-forget: no bloqueamos el click del <a>. El href se abre igual.
+    logContactFromDashboard(leadId, channel)
+      .then((data) => {
+        if (data?.stageAdvanced && onPatchLead) {
+          onPatchLead({
+            leadId,
+            patch: {
+              lifecycle_stage: "contactado",
+              last_touch_at: new Date().toISOString(),
+            },
+          });
+        }
+        return fetchTouchEvents(leadId, { force: true });
+      })
+      .then((data) => {
+        if (data && Array.isArray(data.events)) setTouchEvents(data.events);
+      })
+      .catch(() => {
+        // Silencioso: fallar el logeo no debe interrumpir el flujo de contacto.
+      });
+  };
 
   const handleCopyPhone = async () => {
     if (!lead?.whatsapp) return;
@@ -231,6 +256,7 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onEditL
   const subtitle = lead.company_name || "";
   const scoreTier = getScoreTier(lead.score_priority);
   const aging = timeSince(lead.created_at, lead.lifecycle_stage);
+  const contactedChannels = deriveContactedChannels(touchEvents);
 
   return (
     <div
@@ -316,6 +342,20 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onEditL
                 )}
               </span>
             )}
+            {contactedChannels.length > 0 && (
+              <span className="lead-drawer-contacted-pill" title="Canales usados para contactar al lead">
+                <span className="lead-drawer-contacted-label">Contactado por:</span>
+                {contactedChannels.map((ch, i) => (
+                  <React.Fragment key={ch.key}>
+                    {i > 0 && <span className="lead-drawer-contacted-sep" aria-hidden="true">·</span>}
+                    <span className={`lead-drawer-contacted-channel lead-drawer-contacted-channel--${ch.key}`}>
+                      <ch.icon size={12} aria-hidden="true" />
+                      {ch.label}
+                    </span>
+                  </React.Fragment>
+                ))}
+              </span>
+            )}
           </div>
         </header>
 
@@ -343,6 +383,7 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onEditL
                   target="_blank"
                   rel="noopener noreferrer"
                   className="lead-drawer-action lead-drawer-action--whatsapp"
+                  onClick={() => handleContactClick("whatsapp_dashboard")}
                 >
                   <span className="lead-drawer-action-icon" aria-hidden="true"><MessageCircle size={16} /></span>
                   <span className="lead-drawer-action-label">
@@ -355,6 +396,7 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onEditL
                 <a
                   href={`mailto:${lead.work_email}`}
                   className="lead-drawer-action lead-drawer-action--email"
+                  onClick={() => handleContactClick("email_dashboard")}
                 >
                   <span className="lead-drawer-action-icon" aria-hidden="true"><Mail size={16} /></span>
                   <span className="lead-drawer-action-label">
@@ -833,11 +875,6 @@ function TouchTimeline({ events, status }) {
             </span>
             <div className="lead-drawer-timeline-body">
               <div className="lead-drawer-timeline-title">{meta.title}</div>
-              {e.stage_advanced && e.previous_stage && (
-                <div className="lead-drawer-timeline-sub">
-                  Estado: {e.previous_stage} → contactado
-                </div>
-              )}
               <div className="lead-drawer-timeline-time">
                 {timeMeta ? timeMeta.label : formatDate(e.event_at)}
               </div>
@@ -1209,16 +1246,39 @@ function PipelineStepper({ current, onSelect, disabled }) {
   );
 }
 
+// Canales que representan un intento de contacto REAL hacia el lead (no "aviso visto por Netzen").
+// email_opened queda fuera a propósito: es el pixel del correo de notificación interno, no un contacto saliente.
+const CONTACT_CHANNEL_MAP = {
+  whatsapp: { key: "whatsapp", label: "WhatsApp", icon: MessageCircle },
+  whatsapp_dashboard: { key: "whatsapp", label: "WhatsApp", icon: MessageCircle },
+  email_dashboard: { key: "email", label: "Correo", icon: Mail },
+};
+
+function deriveContactedChannels(touchEvents) {
+  const seen = new Map();
+  for (const evt of touchEvents || []) {
+    const def = CONTACT_CHANNEL_MAP[String(evt.channel || "").toLowerCase()];
+    if (def && !seen.has(def.key)) seen.set(def.key, def);
+  }
+  return Array.from(seen.values());
+}
+
 function describeTouchEvent(evt) {
   const channel = String(evt.channel || "").toLowerCase();
   if (channel === "email_opened") {
-    return { icon: Mail, tone: "email", title: "Email de notificación abierto" };
+    return { icon: Mail, tone: "email", title: "Notificado al correo de Netzen" };
   }
   if (channel === "whatsapp") {
-    return { icon: MessageCircle, tone: "whatsapp", title: "WhatsApp clickeado" };
+    return { icon: MessageCircle, tone: "whatsapp", title: "WhatsApp abierto desde el aviso" };
+  }
+  if (channel === "whatsapp_dashboard") {
+    return { icon: MessageCircle, tone: "whatsapp", title: "WhatsApp abierto desde el dashboard" };
+  }
+  if (channel === "email_dashboard") {
+    return { icon: Mail, tone: "email", title: "Correo del lead abierto desde el dashboard" };
   }
   if (channel === "manual" || channel === "dashboard") {
-    return { icon: Edit3, tone: "manual", title: "Estado actualizado desde el dashboard" };
+    return { icon: Edit3, tone: "manual", title: "Etapa actualizada desde el dashboard" };
   }
   return { icon: Activity, tone: "neutral", title: channel || "Evento" };
 }

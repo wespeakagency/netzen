@@ -9,11 +9,16 @@ const TOUCH_EVENTS_CACHE_TTL_MS = 30_000;
 
 export const touchEventsCache = new Map();
 
+function authParam() {
+  return DASHBOARD_API_TOKEN ? `&token=${encodeURIComponent(DASHBOARD_API_TOKEN)}` : "";
+}
+
 export async function fetchLeads() {
   if (!SHEETS_ENDPOINT) {
     throw new Error("VITE_SHEETS_ENDPOINT no configurado");
   }
-  const url = `${SHEETS_ENDPOINT}?action=leads`;
+  if (!DASHBOARD_API_TOKEN) throw new Error("VITE_DASHBOARD_API_TOKEN no configurado");
+  const url = `${SHEETS_ENDPOINT}?action=leads${authParam()}`;
   const res = await fetch(url, { method: "GET" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
@@ -23,7 +28,8 @@ export async function fetchMetrics() {
   if (!SHEETS_ENDPOINT) {
     throw new Error("VITE_SHEETS_ENDPOINT no configurado");
   }
-  const url = `${SHEETS_ENDPOINT}?action=metrics`;
+  if (!DASHBOARD_API_TOKEN) throw new Error("VITE_DASHBOARD_API_TOKEN no configurado");
+  const url = `${SHEETS_ENDPOINT}?action=metrics${authParam()}`;
   const res = await fetch(url, { method: "GET" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
@@ -41,12 +47,13 @@ export async function fetchCatalogs() {
 
 export async function fetchTouchEvents(leadId, { force = false } = {}) {
   if (!SHEETS_ENDPOINT) throw new Error("VITE_SHEETS_ENDPOINT no configurado");
+  if (!DASHBOARD_API_TOKEN) throw new Error("VITE_DASHBOARD_API_TOKEN no configurado");
   if (!leadId) throw new Error("leadId requerido");
   const cached = touchEventsCache.get(leadId);
   if (!force && cached && Date.now() - cached.fetchedAt < TOUCH_EVENTS_CACHE_TTL_MS) {
     return { events: cached.events };
   }
-  const url = `${SHEETS_ENDPOINT}?action=touchEvents&lead_id=${encodeURIComponent(leadId)}`;
+  const url = `${SHEETS_ENDPOINT}?action=touchEvents&lead_id=${encodeURIComponent(leadId)}${authParam()}`;
   const res = await fetch(url, { method: "GET" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
@@ -61,6 +68,23 @@ export function prefetchTouchEvents(leadId) {
   void fetchTouchEvents(leadId).catch(() => {
     // Prefetch no debe afectar la interacción principal de la tabla.
   });
+}
+
+const LOG_CONTACT_CHANNELS = new Set(["whatsapp_dashboard", "email_dashboard"]);
+
+export async function logContactFromDashboard(leadId, channel) {
+  if (!SHEETS_ENDPOINT) throw new Error("VITE_SHEETS_ENDPOINT no configurado");
+  if (!DASHBOARD_API_TOKEN) throw new Error("VITE_DASHBOARD_API_TOKEN no configurado");
+  if (!leadId) throw new Error("leadId requerido");
+  if (!LOG_CONTACT_CHANNELS.has(channel)) throw new Error(`channel no soportado: ${channel}`);
+
+  const url = `${SHEETS_ENDPOINT}?action=logContact&lead_id=${encodeURIComponent(leadId)}&channel=${encodeURIComponent(channel)}${authParam()}`;
+  const res = await fetch(url, { method: "GET" });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || "No se pudo registrar el contacto");
+  touchEventsCache.delete(leadId);
+  return data;
 }
 
 export async function updateLead({ leadId, field, value }) {

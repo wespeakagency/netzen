@@ -1027,6 +1027,14 @@ img { max-width: 100%; }
 .consent-line label { color: var(--text-secondary); font-size: 12px; line-height: 1.45; cursor: pointer; }
 .consent-line a { font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
 .consent-line--compact { padding: 8px 10px; }
+.consent-line--error { border-color: var(--status-error, #b91c1c); background: rgba(185, 28, 28, 0.04); }
+.consent-line__error {
+  grid-column: 1 / -1;
+  color: var(--status-error, #b91c1c);
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 2px;
+}
 /* ---------- consent banner (cookies) ---------- */
 .consent-banner {
   position: fixed; left: 16px; right: 16px; bottom: 16px;

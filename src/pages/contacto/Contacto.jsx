@@ -61,6 +61,7 @@ const INITIAL = {
   timeline: "",
   implementation_readiness: "",
   mensaje: "",
+  consent: false,
   website: "" // honeypot
 };
 
@@ -91,6 +92,9 @@ function FormularioContacto({ demo }) {
     });
     if (values.pais === "Otro" && !values.ladaCustom.replace(/\D/g, "")) {
       errors.ladaCustom = "Ingresa la lada de tu país (ej. +49).";
+    }
+    if (!values.consent) {
+      errors.consent = "Debes aceptar el aviso de privacidad y los términos.";
     }
     if (hasErrors(errors)) {
       setFieldErrors(errors);
@@ -327,7 +331,15 @@ function FormularioContacto({ demo }) {
         <label>Sitio web (no llenar)<input type="text" name="website" tabIndex={-1} autoComplete="off" value={values.website} onChange={update("website")} /></label>
       </div>
 
-      <ConsentLine style={{ marginTop: 18 }} />
+      <ConsentLine
+        style={{ marginTop: 18 }}
+        checked={values.consent}
+        onChange={(checked) => {
+          setValues((prev) => ({ ...prev, consent: checked }));
+          if (fieldErrors.consent) setFieldErrors((prev) => { const n = { ...prev }; delete n.consent; return n; });
+        }}
+        error={fieldErrors.consent}
+      />
 
       {status === "error" && (
         <div role="alert" style={{ marginTop: 14, padding: "10px 14px", borderRadius: 8, background: "var(--status-danger-tint, #fdecec)", color: "var(--status-danger, #b3261e)", fontSize: 13.5 }}>
@@ -336,7 +348,7 @@ function FormularioContacto({ demo }) {
       )}
 
       <div style={{ marginTop: 20 }}>
-        <Button type="submit" size="lg" block disabled={sending} placement="submit-form">
+        <Button type="submit" size="lg" block disabled={sending || !values.consent} placement="submit-form">
           {sending ? "Enviando..." : demo ? LABELS.demo : LABELS.diagnostico}
         </Button>
       </div>

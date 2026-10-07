@@ -39,6 +39,7 @@ function Newsletter({ compact }) {
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [website, setWebsite] = useState("");
+  const [consent, setConsent] = useState(false);
   const [status, setStatus] = useState("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
@@ -46,6 +47,9 @@ function Newsletter({ compact }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errors = validateFields({ email }, { email: { required: true, email: true } });
+    if (!consent) {
+      errors.consent = "Debes aceptar el aviso de privacidad y los términos.";
+    }
     if (hasErrors(errors)) {
       setFieldErrors(errors);
       setStatus("error");
@@ -104,13 +108,21 @@ function Newsletter({ compact }) {
             <div aria-hidden="true" style={{ position: "absolute", left: "-10000px", width: 1, height: 1, overflow: "hidden" }}>
               <label>Sitio web (no llenar)<input type="text" name="website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} /></label>
             </div>
-            <ConsentLine compact />
+            <ConsentLine
+              compact
+              checked={consent}
+              onChange={(c) => {
+                setConsent(c);
+                if (fieldErrors.consent) setFieldErrors((prev) => { const n = { ...prev }; delete n.consent; return n; });
+              }}
+              error={fieldErrors.consent}
+            />
             {status === "error" && (
               <div role="alert" style={{ padding: "8px 12px", borderRadius: 8, background: "var(--status-danger-tint, #fdecec)", color: "var(--status-danger, #b3261e)", fontSize: 13 }}>
                 {errorMsg}
               </div>
             )}
-            <button type="submit" className="btn btn--primary btn--block" disabled={status === "sending"}>
+            <button type="submit" className="btn btn--primary btn--block" disabled={status === "sending" || !consent}>
               {status === "sending" ? "Enviando..." : "Suscribirme"}
             </button>
           </div>

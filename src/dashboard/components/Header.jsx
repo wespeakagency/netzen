@@ -13,7 +13,7 @@ export function Header({ count, lastUpdated, onRefresh, refreshing, onLogout, on
           <p className="dashboard-brand-line">
             <span className="brand-red">Netzen</span>
             <span className="brand-separator">·</span>
-            <span className="brand-title">Dashboard interno</span>
+            <span className="brand-title"></span>
           </p>
         </div>
       </div>

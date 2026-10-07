@@ -111,6 +111,11 @@ export function App() {
     };
   }, [authed, load]);
 
+  const handlePatchLead = useCallback(({ leadId, patch }) => {
+    if (!leadId || !patch) return;
+    setLeads((prev) => prev.map((l) => (l.lead_id === leadId ? { ...l, ...patch } : l)));
+  }, []);
+
   const handleUpdateLead = useCallback(async ({ leadId, field, value }) => {
     let previousValue;
     setLeads((prev) => prev.map((l) => {
@@ -253,6 +258,7 @@ export function App() {
               hasActiveFilters={!!hasActiveFilters}
               onClearFilters={clearFilters}
               onUpdateLead={handleUpdateLead}
+              onPatchLead={handlePatchLead}
               onEditLead={handleEditLead}
               onArchiveLead={handleArchiveLead}
               onRestoreLead={handleRestoreLead}

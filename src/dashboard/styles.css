@@ -1992,6 +1992,40 @@ body {
   color: var(--nz-text-soft);
 }
 
+.lead-drawer-contacted-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(21, 128, 61, 0.08);
+  border: 1px solid rgba(21, 128, 61, 0.22);
+  font-size: 11px;
+  font-weight: 500;
+  color: #166534;
+  flex-wrap: wrap;
+}
+.lead-drawer-contacted-label {
+  font-family: "Montserrat", "Helvetica Neue", Arial, sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 10px;
+  color: #15803d;
+}
+.lead-drawer-contacted-sep {
+  color: #15803d;
+  opacity: 0.5;
+}
+.lead-drawer-contacted-channel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+}
+.lead-drawer-contacted-channel--whatsapp { color: #15803d; }
+.lead-drawer-contacted-channel--email { color: #1d4ed8; }
+
 .lead-drawer-score-chip {
   display: inline-flex;
   align-items: baseline;

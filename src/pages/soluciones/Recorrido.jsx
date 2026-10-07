@@ -50,6 +50,7 @@ function FormRecorrido({ form, slug }) {
     return acc;
   }, [form.fields]);
   const [values, setValues] = useState(initial);
+  const [consent, setConsent] = useState(false);
   const [status, setStatus] = useState("idle"); // idle | sending | sent | error
   const [errorMsg, setErrorMsg] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
@@ -69,6 +70,9 @@ function FormRecorrido({ form, slug }) {
       rules[f.label] = { required: true, ...(isEmail ? { email: true } : {}) };
     });
     const errors = validateFields(values, rules);
+    if (!consent) {
+      errors.consent = "Debes aceptar el aviso de privacidad y los términos.";
+    }
     if (hasErrors(errors)) {
       setFieldErrors(errors);
       setStatus("error");
@@ -119,6 +123,7 @@ function FormRecorrido({ form, slug }) {
 
   const resetForm = () => {
     setValues(initial);
+    setConsent(false);
     setStatus("idle");
     setErrorMsg("");
     setFieldErrors({});
@@ -167,7 +172,14 @@ function FormRecorrido({ form, slug }) {
           <label>Sitio web (no llenar)<input type="text" name="website" tabIndex={-1} autoComplete="off" value={values.website} onChange={update("website")} /></label>
         </div>
 
-        <ConsentLine />
+        <ConsentLine
+          checked={consent}
+          onChange={(c) => {
+            setConsent(c);
+            if (fieldErrors.consent) setFieldErrors((prev) => { const n = { ...prev }; delete n.consent; return n; });
+          }}
+          error={fieldErrors.consent}
+        />
 
         {status === "error" && (
           <div role="alert" style={{ padding: "10px 14px", borderRadius: 8, background: "var(--status-danger-tint, #fdecec)", color: "var(--status-danger, #b3261e)", fontSize: 13.5 }}>
@@ -175,7 +187,7 @@ function FormRecorrido({ form, slug }) {
           </div>
         )}
 
-        <button type="submit" className="btn btn--primary btn--lg btn--block" disabled={sending}>
+        <button type="submit" className="btn btn--primary btn--lg btn--block" disabled={sending || !consent}>
           {sending ? "Enviando..." : form.submit}
         </button>
         <p style={{ fontSize: 12, color: "var(--text-tertiary)", textAlign: "center", margin: 0 }}>
