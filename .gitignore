@@ -3,6 +3,7 @@ dist
 standalone
 standalone-dashboard
 entregable
+entregables
 docs/*
 .DS_Store
 apps-script
