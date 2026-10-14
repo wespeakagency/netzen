@@ -1293,11 +1293,17 @@ function describeTouchEvent(evt) {
   if (channel === "email_opened") {
     return { icon: Mail, tone: "email", title: "Postulación recibida y notificada al equipo" };
   }
-  if (channel === "whatsapp" || channel === "whatsapp_dashboard" || channel === "whatsapp_email") {
-    return { icon: MessageCircle, tone: "whatsapp", title: "Mensaje de WhatsApp enviado al lead" };
+  if (channel === "whatsapp_dashboard") {
+    return { icon: MessageCircle, tone: "whatsapp", title: "WhatsApp enviado desde el panel" };
   }
-  if (channel === "email_dashboard" || channel === "email_email") {
-    return { icon: Mail, tone: "email", title: "Correo de seguimiento enviado al lead" };
+  if (channel === "whatsapp_email" || channel === "whatsapp") {
+    return { icon: MessageCircle, tone: "whatsapp", title: "WhatsApp enviado desde el aviso de correo" };
+  }
+  if (channel === "email_dashboard") {
+    return { icon: Mail, tone: "email", title: "Correo enviado desde el panel" };
+  }
+  if (channel === "email_email") {
+    return { icon: Mail, tone: "email", title: "Correo enviado desde el aviso de correo" };
   }
   if (channel === "manual" || channel === "dashboard") {
     return { icon: Edit3, tone: "manual", title: "Etapa actualizada manualmente" };
