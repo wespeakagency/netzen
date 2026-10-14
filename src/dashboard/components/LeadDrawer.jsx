@@ -847,6 +847,27 @@ function ScoringPeekPopover({ lead, onSeeMore }) {
   );
 }
 
+// Agrupa eventos por canal para colapsar repeticiones en la UI (ej: 3 clicks de WhatsApp
+// desde el dashboard aparecen como UNA sola fila con "× 3"). El backend sigue guardando
+// una fila por evento en 02_TOUCH_EVENTS, así que la trazabilidad completa queda intacta.
+function groupEventsByChannel(events) {
+  const map = new Map();
+  for (const e of events || []) {
+    const key = String(e.channel || "").toLowerCase() || "neutral";
+    if (!map.has(key)) {
+      map.set(key, { channel: e.channel, count: 0, latestAt: "", latestId: "" });
+    }
+    const g = map.get(key);
+    g.count += 1;
+    const at = String(e.event_at || "");
+    if (!g.latestAt || at.localeCompare(g.latestAt) > 0) {
+      g.latestAt = at;
+      g.latestId = e.event_id || `${at}-${key}`;
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => (b.latestAt || "").localeCompare(a.latestAt || ""));
+}
+
 function TouchTimeline({ events, status }) {
   if (status === "loading") {
     return <p className="lead-drawer-timeline-empty">Cargando historial…</p>;
@@ -862,21 +883,23 @@ function TouchTimeline({ events, status }) {
     return <p className="lead-drawer-timeline-empty">Sin actividad registrada aún.</p>;
   }
 
+  const grouped = groupEventsByChannel(events);
+
   return (
     <ul className="lead-drawer-timeline">
-      {events.map((e) => {
-        const meta = describeTouchEvent(e);
+      {grouped.map((g) => {
+        const meta = describeTouchEvent({ channel: g.channel });
         const Icon = meta.icon;
-        const timeMeta = timeSince(e.event_at);
+        const timeMeta = timeSince(g.latestAt);
         return (
-          <li key={e.event_id || `${e.event_at}-${e.channel}`} className="lead-drawer-timeline-item">
+          <li key={g.latestId} className="lead-drawer-timeline-item">
             <span className={`lead-drawer-timeline-icon lead-drawer-timeline-icon--${meta.tone}`}>
               <Icon size={16} strokeWidth={2} />
             </span>
             <div className="lead-drawer-timeline-body">
               <div className="lead-drawer-timeline-title">{meta.title}</div>
               <div className="lead-drawer-timeline-time">
-                {timeMeta ? timeMeta.label : formatDate(e.event_at)}
+                {timeMeta ? timeMeta.label : formatDate(g.latestAt)}
               </div>
             </div>
           </li>
