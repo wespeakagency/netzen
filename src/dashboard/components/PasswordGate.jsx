@@ -1,20 +1,24 @@
 import React, { useState } from "react";
 import isotype from "../../assets/netzen-isotipo-red.svg";
-import { DASHBOARD_PASSWORD } from "../../lib/env.js";
+import { SHEETS_ENDPOINT } from "../../lib/env.js";
 
-const STORAGE_KEY = "netzen_dashboard_auth";
+const SESSION_KEY = "netzen_dashboard_session";
+
+export function getSessionToken() {
+  try {
+    return sessionStorage.getItem(SESSION_KEY) || "";
+  } catch {
+    return "";
+  }
+}
 
 export function isAuthenticated() {
-  try {
-    return localStorage.getItem(STORAGE_KEY) === "1";
-  } catch {
-    return false;
-  }
+  return Boolean(getSessionToken());
 }
 
 export function clearAuth() {
   try {
-    localStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(SESSION_KEY);
   } catch {
     // ignorar
   }
@@ -25,8 +29,9 @@ export function PasswordGate({ onSuccess }) {
   const [error, setError] = useState("");
   const [attempts, setAttempts] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
@@ -35,17 +40,26 @@ export function PasswordGate({ onSuccess }) {
       return;
     }
 
-    if (value === DASHBOARD_PASSWORD) {
-      try {
-        localStorage.setItem(STORAGE_KEY, "1");
-      } catch {
-        // ignorar
+    setLoading(true);
+    try {
+      const res = await fetch(SHEETS_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "auth", password: value }),
+      });
+      const data = await res.json();
+      if (data.ok && data.session_token) {
+        sessionStorage.setItem(SESSION_KEY, data.session_token);
+        onSuccess();
+      } else {
+        setAttempts((n) => n + 1);
+        setError("Contraseña incorrecta.");
+        setValue("");
       }
-      onSuccess();
-    } else {
-      setAttempts((n) => n + 1);
-      setError("Contraseña incorrecta.");
-      setValue("");
+    } catch {
+      setError("Error al conectar. Intenta de nuevo.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -105,7 +119,7 @@ export function PasswordGate({ onSuccess }) {
                 autoComplete="current-password"
                 className="gate-input"
                 placeholder="••••••••"
-                disabled={locked}
+                disabled={locked || loading}
                 aria-invalid={Boolean(error)}
                 aria-describedby={error ? "gate-error" : undefined}
               />
@@ -129,29 +143,27 @@ export function PasswordGate({ onSuccess }) {
             <button
               type="submit"
               className="gate-submit"
-              disabled={!value || locked}
+              disabled={!value || locked || loading}
             >
-              Entrar
-              <svg
-                aria-hidden="true"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M5 12h14" />
-                <path d="M13 6l6 6-6 6" />
-              </svg>
+              {loading ? "Verificando…" : "Entrar"}
+              {!loading && (
+                <svg
+                  aria-hidden="true"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M5 12h14" />
+                  <path d="M13 6l6 6-6 6" />
+                </svg>
+              )}
             </button>
           </form>
-
-          {/* <p className="gate-hint">
-            ¿Problemas para entrar? Contacta al admin del equipo.
-          </p> */}
         </div>
       </main>
     </div>

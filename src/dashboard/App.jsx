@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchLeads, fetchCatalogs, updateLead, editLead, archiveLead, restoreLead } from "./api.js";
-import { HAS_DASHBOARD_PASSWORD } from "../lib/env.js";
+import { HAS_FORMS_BACKEND } from "../lib/env.js";
 import { Header } from "./components/Header.jsx";
 import { Counters } from "./components/Counters.jsx";
 import { LeadsTable } from "./components/LeadsTable.jsx";
@@ -43,7 +43,7 @@ const CSV_COLUMNS = [
 ];
 
 export function App() {
-  const [authed, setAuthed] = useState(() => !HAS_DASHBOARD_PASSWORD || isAuthenticated());
+  const [authed, setAuthed] = useState(() => !HAS_FORMS_BACKEND || isAuthenticated());
   const [leads, setLeads] = useState([]);
   const [catalogs, setCatalogs] = useState({});
   const [status, setStatus] = useState("loading");
@@ -226,7 +226,7 @@ export function App() {
         lastUpdated={lastUpdated}
         onRefresh={load}
         refreshing={refreshing}
-        onLogout={HAS_DASHBOARD_PASSWORD ? handleLogout : null}
+        onLogout={HAS_FORMS_BACKEND ? handleLogout : null}
         onExport={status === "ok" && filteredLeads.length > 0 ? handleExport : null}
       />
 

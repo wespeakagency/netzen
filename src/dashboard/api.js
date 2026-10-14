@@ -1,4 +1,5 @@
-import { SHEETS_ENDPOINT, DASHBOARD_API_TOKEN } from "../lib/env.js";
+import { SHEETS_ENDPOINT } from "../lib/env.js";
+import { getSessionToken } from "./components/PasswordGate.jsx";
 
 const EDITABLE_FIELDS = ["lifecycle_stage"];
 export const LEAD_EDIT_FIELDS = [
@@ -10,35 +11,43 @@ const TOUCH_EVENTS_CACHE_TTL_MS = 30_000;
 export const touchEventsCache = new Map();
 
 function authParam() {
-  return DASHBOARD_API_TOKEN ? `&token=${encodeURIComponent(DASHBOARD_API_TOKEN)}` : "";
+  const t = getSessionToken();
+  return t ? `&token=${encodeURIComponent(t)}` : "";
+}
+
+function authToken() {
+  return getSessionToken();
+}
+
+function handleUnauthorized(data) {
+  if (data?.error === "unauthorized") {
+    import("./components/PasswordGate.jsx").then(({ clearAuth }) => clearAuth());
+    window.location.reload();
+  }
 }
 
 export async function fetchLeads() {
-  if (!SHEETS_ENDPOINT) {
-    throw new Error("VITE_SHEETS_ENDPOINT no configurado");
-  }
-  if (!DASHBOARD_API_TOKEN) throw new Error("VITE_DASHBOARD_API_TOKEN no configurado");
+  if (!SHEETS_ENDPOINT) throw new Error("VITE_SHEETS_ENDPOINT no configurado");
   const url = `${SHEETS_ENDPOINT}?action=leads${authParam()}`;
   const res = await fetch(url, { method: "GET" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  const data = await res.json();
+  handleUnauthorized(data);
+  return data;
 }
 
 export async function fetchMetrics() {
-  if (!SHEETS_ENDPOINT) {
-    throw new Error("VITE_SHEETS_ENDPOINT no configurado");
-  }
-  if (!DASHBOARD_API_TOKEN) throw new Error("VITE_DASHBOARD_API_TOKEN no configurado");
+  if (!SHEETS_ENDPOINT) throw new Error("VITE_SHEETS_ENDPOINT no configurado");
   const url = `${SHEETS_ENDPOINT}?action=metrics${authParam()}`;
   const res = await fetch(url, { method: "GET" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  const data = await res.json();
+  handleUnauthorized(data);
+  return data;
 }
 
 export async function fetchCatalogs() {
-  if (!SHEETS_ENDPOINT) {
-    throw new Error("VITE_SHEETS_ENDPOINT no configurado");
-  }
+  if (!SHEETS_ENDPOINT) throw new Error("VITE_SHEETS_ENDPOINT no configurado");
   const url = `${SHEETS_ENDPOINT}?action=catalogs`;
   const res = await fetch(url, { method: "GET" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -47,7 +56,6 @@ export async function fetchCatalogs() {
 
 export async function fetchTouchEvents(leadId, { force = false } = {}) {
   if (!SHEETS_ENDPOINT) throw new Error("VITE_SHEETS_ENDPOINT no configurado");
-  if (!DASHBOARD_API_TOKEN) throw new Error("VITE_DASHBOARD_API_TOKEN no configurado");
   if (!leadId) throw new Error("leadId requerido");
   const cached = touchEventsCache.get(leadId);
   if (!force && cached && Date.now() - cached.fetchedAt < TOUCH_EVENTS_CACHE_TTL_MS) {
@@ -57,6 +65,7 @@ export async function fetchTouchEvents(leadId, { force = false } = {}) {
   const res = await fetch(url, { method: "GET" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
+  handleUnauthorized(data);
   touchEventsCache.set(leadId, {
     events: Array.isArray(data?.events) ? data.events : [],
     fetchedAt: Date.now()
@@ -65,16 +74,13 @@ export async function fetchTouchEvents(leadId, { force = false } = {}) {
 }
 
 export function prefetchTouchEvents(leadId) {
-  void fetchTouchEvents(leadId).catch(() => {
-    // Prefetch no debe afectar la interacción principal de la tabla.
-  });
+  void fetchTouchEvents(leadId).catch(() => {});
 }
 
 const LOG_CONTACT_CHANNELS = new Set(["whatsapp_dashboard", "email_dashboard"]);
 
 export async function logContactFromDashboard(leadId, channel) {
   if (!SHEETS_ENDPOINT) throw new Error("VITE_SHEETS_ENDPOINT no configurado");
-  if (!DASHBOARD_API_TOKEN) throw new Error("VITE_DASHBOARD_API_TOKEN no configurado");
   if (!leadId) throw new Error("leadId requerido");
   if (!LOG_CONTACT_CHANNELS.has(channel)) throw new Error(`channel no soportado: ${channel}`);
 
@@ -89,18 +95,16 @@ export async function logContactFromDashboard(leadId, channel) {
 
 export async function updateLead({ leadId, field, value }) {
   if (!SHEETS_ENDPOINT) throw new Error("VITE_SHEETS_ENDPOINT no configurado");
-  if (!DASHBOARD_API_TOKEN) throw new Error("VITE_DASHBOARD_API_TOKEN no configurado");
   if (!leadId) throw new Error("leadId requerido");
   if (!EDITABLE_FIELDS.includes(field)) throw new Error(`Campo no editable: ${field}`);
 
   const body = {
     action: "updateLead",
-    token: DASHBOARD_API_TOKEN,
+    token: authToken(),
     lead_id: leadId,
     field,
     value
   };
-  // Content-Type text/plain evita el preflight CORS de Apps Script (mismo patrón que submitLead).
   const res = await fetch(SHEETS_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -114,11 +118,10 @@ export async function updateLead({ leadId, field, value }) {
 
 async function mutateLead(action, payload) {
   if (!SHEETS_ENDPOINT) throw new Error("VITE_SHEETS_ENDPOINT no configurado");
-  if (!DASHBOARD_API_TOKEN) throw new Error("VITE_DASHBOARD_API_TOKEN no configurado");
   const res = await fetch(SHEETS_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action, token: DASHBOARD_API_TOKEN, actor: "dashboard-internal", ...payload })
+    body: JSON.stringify({ action, token: authToken(), actor: "dashboard-internal", ...payload })
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
