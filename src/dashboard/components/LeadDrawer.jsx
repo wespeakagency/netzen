@@ -1272,9 +1272,11 @@ function PipelineStepper({ current, onSelect, disabled }) {
 // Canales que representan un intento de contacto REAL hacia el lead (no "aviso visto por Netzen").
 // email_opened queda fuera a propósito: es el pixel del correo de notificación interno, no un contacto saliente.
 const CONTACT_CHANNEL_MAP = {
-  whatsapp: { key: "whatsapp", label: "WhatsApp", icon: MessageCircle },
+  whatsapp:           { key: "whatsapp", label: "WhatsApp", icon: MessageCircle },
   whatsapp_dashboard: { key: "whatsapp", label: "WhatsApp", icon: MessageCircle },
-  email_dashboard: { key: "email", label: "Correo", icon: Mail },
+  whatsapp_email:     { key: "whatsapp", label: "WhatsApp", icon: MessageCircle },
+  email_dashboard:    { key: "email",    label: "Correo",   icon: Mail },
+  email_email:        { key: "email",    label: "Correo",   icon: Mail },
 };
 
 function deriveContactedChannels(touchEvents) {
@@ -1297,8 +1299,14 @@ function describeTouchEvent(evt) {
   if (channel === "whatsapp_dashboard") {
     return { icon: MessageCircle, tone: "whatsapp", title: "WhatsApp abierto desde el dashboard" };
   }
+  if (channel === "whatsapp_email") {
+    return { icon: MessageCircle, tone: "whatsapp", title: "WhatsApp abierto desde el correo" };
+  }
   if (channel === "email_dashboard") {
     return { icon: Mail, tone: "email", title: "Correo del lead abierto desde el dashboard" };
+  }
+  if (channel === "email_email") {
+    return { icon: Mail, tone: "email", title: "Correo del lead abierto desde el aviso" };
   }
   if (channel === "manual" || channel === "dashboard") {
     return { icon: Edit3, tone: "manual", title: "Etapa actualizada desde el dashboard" };
