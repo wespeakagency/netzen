@@ -4,7 +4,10 @@ import { getSessionToken } from "./components/PasswordGate.jsx";
 const EDITABLE_FIELDS = ["lifecycle_stage"];
 export const LEAD_EDIT_FIELDS = [
   "full_name", "job_title", "work_email", "whatsapp", "country_code",
-  "company_name", "route_code", "business_model", "owner", "next_action", "notes"
+  "company_name", "route_code", "business_model", "owner", "next_action", "notes",
+  // Proceso Irving
+  "contacto_whatsapp", "contacto_llamada", "contacto_demo", "contacto_propuesta",
+  "observaciones_seguimiento", "tomador_decision", "referido_por"
 ];
 const TOUCH_EVENTS_CACHE_TTL_MS = 30_000;
 

@@ -46,7 +46,15 @@ const EDIT_FIELDS = [
   ["full_name", "Nombre"], ["job_title", "Cargo"], ["work_email", "Email"],
   ["whatsapp", "WhatsApp"], ["country_code", "País", "countries"], ["company_name", "Empresa"],
   ["route_code", "Ruta", "routes"], ["business_model", "Modelo", "business_models"], ["owner", "Propietario"],
-  ["next_action", "Próxima acción"], ["notes", "Notas"]
+  ["next_action", "Próxima acción"], ["notes", "Notas"],
+  // Proceso Irving
+  ["contacto_whatsapp", "WhatsApp", null, "bool"],
+  ["contacto_llamada", "Llamada", null, "bool"],
+  ["contacto_demo", "Demo", null, "bool"],
+  ["contacto_propuesta", "Propuesta", null, "bool"],
+  ["tomador_decision", "Tomador de decisión", "irving_decision_roles"],
+  ["referido_por", "Referido por"],
+  ["observaciones_seguimiento", "Observaciones de seguimiento"],
 ];
 
 const EDIT_FIELD_SPANS = {
@@ -55,6 +63,11 @@ const EDIT_FIELD_SPANS = {
   work_email: "half", whatsapp: "half",
   country_code: "third", business_model: "third", route_code: "third",
   next_action: "wide", notes: "wide",
+  // Proceso Irving
+  contacto_whatsapp: "quarter", contacto_llamada: "quarter",
+  contacto_demo: "quarter", contacto_propuesta: "quarter",
+  tomador_decision: "half", referido_por: "half",
+  observaciones_seguimiento: "wide",
 };
 
 const isArchived = (lead) => /\[\[CRM_ARCHIVE:v1\|/.test(String(lead?.flags || ""));
@@ -592,7 +605,7 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onPatch
           <form className="sensitive-modal" onSubmit={saveEdit} onClick={(e) => e.stopPropagation()}>
             <div className="sensitive-modal-head"><div><h3>Editar datos sensibles</h3><p>Solo se guardarán los campos modificados y quedarán auditados.</p></div></div>
             <div className="lead-edit-grid">
-              {EDIT_FIELDS.map(([key, label, catalogName]) => (
+              {EDIT_FIELDS.map(([key, label, catalogName, fieldType]) => (
                 <label key={key} className={`lead-edit-field lead-edit-field--${EDIT_FIELD_SPANS[key] || "half"}`}>
                   <span>{label}</span>
                   {catalogName ? (
@@ -601,7 +614,12 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onPatch
                         <option key={`${key}-${option.value}`} value={option.value} disabled={option.disabled}>{option.label}</option>
                       ))}
                     </select>
-                  ) : key === "notes" || key === "next_action" ? (
+                  ) : fieldType === "bool" ? (
+                    <select value={editValues[key] || ""} onChange={(e) => setEditValues((v) => ({ ...v, [key]: e.target.value }))}>
+                      <option value="">Sin marcar</option>
+                      <option value="Sí">Sí</option>
+                    </select>
+                  ) : key === "notes" || key === "next_action" || key === "observaciones_seguimiento" ? (
                     <textarea value={editValues[key] || ""} maxLength={2000} onChange={(e) => setEditValues((v) => ({ ...v, [key]: e.target.value }))} />
                   ) : (
                     <input type={key === "work_email" ? "email" : "text"} value={editValues[key] || ""} maxLength={key === "whatsapp" ? 40 : 320} required={key === "full_name"} onChange={(e) => setEditValues((v) => syncCountryPhone(v, key, e.target.value))} />

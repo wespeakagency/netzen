@@ -3819,6 +3819,7 @@ button.pipeline-step:disabled {
 .lead-edit-field { display:flex; flex-direction:column; gap:6px; color:#3d4654; font-size:12px; font-weight:700; }
 .lead-edit-field--half { grid-column:span 6; }
 .lead-edit-field--third { grid-column:span 4; }
+.lead-edit-field--quarter { grid-column:span 3; }
 .lead-edit-field--wide { grid-column:1/-1; }
 .lead-edit-field input,.lead-edit-field select,.lead-edit-field textarea { width:100%; box-sizing:border-box; border:1px solid #cfd5dd; border-radius:9px; padding:0 12px; color:#18202c; background-color:#fff; font-family:inherit; font-size:14px; font-weight:400; line-height:1.35; transition:border-color .16s ease,box-shadow .16s ease,background-color .16s ease; }
 .lead-edit-field input,.lead-edit-field select { height:42px; }
