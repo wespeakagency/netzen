@@ -1291,25 +1291,16 @@ function deriveContactedChannels(touchEvents) {
 function describeTouchEvent(evt) {
   const channel = String(evt.channel || "").toLowerCase();
   if (channel === "email_opened") {
-    return { icon: Mail, tone: "email", title: "Notificado al correo de Netzen" };
+    return { icon: Mail, tone: "email", title: "Postulación recibida y notificada al equipo" };
   }
-  if (channel === "whatsapp") {
-    return { icon: MessageCircle, tone: "whatsapp", title: "WhatsApp abierto desde el aviso" };
+  if (channel === "whatsapp" || channel === "whatsapp_dashboard" || channel === "whatsapp_email") {
+    return { icon: MessageCircle, tone: "whatsapp", title: "Mensaje de WhatsApp enviado al lead" };
   }
-  if (channel === "whatsapp_dashboard") {
-    return { icon: MessageCircle, tone: "whatsapp", title: "WhatsApp abierto desde el dashboard" };
-  }
-  if (channel === "whatsapp_email") {
-    return { icon: MessageCircle, tone: "whatsapp", title: "WhatsApp abierto desde el correo" };
-  }
-  if (channel === "email_dashboard") {
-    return { icon: Mail, tone: "email", title: "Correo del lead abierto desde el dashboard" };
-  }
-  if (channel === "email_email") {
-    return { icon: Mail, tone: "email", title: "Correo del lead abierto desde el aviso" };
+  if (channel === "email_dashboard" || channel === "email_email") {
+    return { icon: Mail, tone: "email", title: "Correo de seguimiento enviado al lead" };
   }
   if (channel === "manual" || channel === "dashboard") {
-    return { icon: Edit3, tone: "manual", title: "Etapa actualizada desde el dashboard" };
+    return { icon: Edit3, tone: "manual", title: "Etapa actualizada manualmente" };
   }
   return { icon: Activity, tone: "neutral", title: channel || "Evento" };
 }
