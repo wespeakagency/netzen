@@ -4,7 +4,7 @@ import {
   Users, Wallet, CalendarClock, Wrench, BarChart3, Sparkles, HelpCircle,
   Archive, ArchiveRestore, Save, ShieldAlert, ArrowRight, ExternalLink,
 } from "lucide-react";
-import { fetchTouchEvents, logContactFromDashboard } from "../api.js";
+import { fetchTouchEvents, logContactFromDashboard, sendProposal } from "../api.js";
 import { BUSINESS_MODELS } from "../../lib/leadCatalogs.js";
 import { PAISES, detectCountryFromPhone, replaceLadaInPhone, getLada } from "../../lib/paisesLadas.js";
 import {
@@ -52,10 +52,14 @@ const EDIT_FIELDS = [
   ["contacto_llamada", "Llamada", null, "bool"],
   ["contacto_demo", "Demo", null, "bool"],
   ["contacto_propuesta", "Propuesta", null, "bool"],
-  ["tomador_decision", "Tomador de decisión", "irving_decision_roles"],
-  ["referido_por", "Referido por"],
   ["observaciones_seguimiento", "Observaciones de seguimiento"],
 ];
+
+const IRVING_PREREQS = {
+  contacto_llamada: "contacto_whatsapp",
+  contacto_demo: "contacto_llamada",
+  contacto_propuesta: "contacto_demo",
+};
 
 const EDIT_FIELD_SPANS = {
   full_name: "half", company_name: "half",
@@ -66,7 +70,6 @@ const EDIT_FIELD_SPANS = {
   // Proceso Irving
   contacto_whatsapp: "quarter", contacto_llamada: "quarter",
   contacto_demo: "quarter", contacto_propuesta: "quarter",
-  tomador_decision: "half", referido_por: "half",
   observaciones_seguimiento: "wide",
 };
 
@@ -79,8 +82,13 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onPatch
   const [showScoreExplain, setShowScoreExplain] = useState(true);
   const [explainTab, setExplainTab] = useState("why"); // "why" | "answers" | "bars"
   const [phoneCopied, setPhoneCopied] = useState(false);
+  const [showStageEdit, setShowStageEdit] = useState(false);
   const [stageStatus, setStageStatus] = useState("idle"); // idle | saving | error
   const [stageError, setStageError] = useState("");
+  const [irvingStatus, setIrvingStatus] = useState("idle");
+  const [irvingError, setIrvingError] = useState("");
+  const [irvingNotes, setIrvingNotes] = useState("");
+  const [notesStatus, setNotesStatus] = useState("idle"); // idle | saving | saved | error
   const [touchEvents, setTouchEvents] = useState([]);
   const [touchStatus, setTouchStatus] = useState("idle"); // idle | loading | ok | error
   const [scoringPopoverOpen, setScoringPopoverOpen] = useState(false);
@@ -128,6 +136,60 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onPatch
     setTimeout(() => {
       document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 0);
+  };
+
+  const saveIrvingField = async (field, value) => {
+    if (!lead || !onEditLead) return;
+    if (String(lead[field] || "").trim() === String(value).trim()) return;
+    setIrvingStatus("saving");
+    setIrvingError("");
+    try {
+      await onEditLead({ leadId: lead.lead_id, changes: { [field]: value }, reason: "Seguimiento actualizado desde drawer" });
+      setIrvingStatus("idle");
+      if (value === "Sí") {
+        const stageMap = { contacto_whatsapp: "contactado", contacto_propuesta: "propuesta" };
+        const targetStage = stageMap[field];
+        if (targetStage) {
+          const currentIdx = STAGE_ORDER.indexOf(lead.lifecycle_stage || "nuevo");
+          const targetIdx = STAGE_ORDER.indexOf(targetStage);
+          if (currentIdx < targetIdx) changeStage(targetStage);
+        }
+      }
+    } catch (err) {
+      setIrvingStatus("error");
+      setIrvingError(err.message || "No se pudo guardar");
+    }
+  };
+
+  const saveIrvingNotes = async () => {
+    if (!lead || !onEditLead || notesStatus === "saving") return;
+    const trimmed = irvingNotes.trim();
+    if (trimmed === (lead.observaciones_seguimiento || "").trim()) return;
+    setNotesStatus("saving");
+    try {
+      await onEditLead({ leadId: lead.lead_id, changes: { observaciones_seguimiento: trimmed }, reason: "Observaciones de seguimiento actualizadas" });
+      setNotesStatus("saved");
+      setTimeout(() => setNotesStatus("idle"), 2000);
+    } catch {
+      setNotesStatus("error");
+    }
+  };
+
+  const toggleIrving = async (field) => {
+    if (!lead || !onEditLead || irvingStatus === "saving") return;
+    const newValue = lead[field] === "Sí" ? "" : "Sí";
+    setIrvingStatus("saving");
+    setIrvingError("");
+    try {
+      await onEditLead({ leadId: lead.lead_id, changes: { [field]: newValue }, reason: "Seguimiento actualizado desde drawer" });
+      setIrvingStatus("idle");
+      if (field === "contacto_propuesta" && newValue === "Sí") {
+        changeStage("propuesta");
+      }
+    } catch (err) {
+      setIrvingStatus("error");
+      setIrvingError(err.message || "No se pudo guardar");
+    }
   };
 
   const changeStage = async (newStage) => {
@@ -225,6 +287,11 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onPatch
   };
 
   useEffect(() => {
+    setIrvingNotes(lead?.observaciones_seguimiento || "");
+    setNotesStatus("idle");
+  }, [lead?.lead_id]);
+
+  useEffect(() => {
     if (!lead) return;
     const handleKey = (e) => {
       if (e.key === "Escape") onClose();
@@ -286,14 +353,32 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onPatch
       >
         <header className="lead-drawer-header">
           <div className="lead-drawer-header-glow" aria-hidden="true" />
-          <button
-            ref={closeBtnRef}
-            className="lead-drawer-close"
-            onClick={onClose}
-            aria-label="Cerrar detalle del lead"
-          >
-            <X size={18} />
-          </button>
+          <div className="lead-drawer-header-controls">
+            {!isArchived(lead) && onEditLead && (
+              <button type="button" className="lead-drawer-ctrl-btn" onClick={openEdit} title="Editar datos">
+                <Edit3 size={14} />
+              </button>
+            )}
+            {!isArchived(lead) && onArchiveLead && (
+              <button type="button" className="lead-drawer-ctrl-btn lead-drawer-ctrl-btn--danger" onClick={() => { setSensitiveError(""); setConfirmAction("archive"); }} title="Archivar lead">
+                <Archive size={14} />
+              </button>
+            )}
+            {isArchived(lead) && onRestoreLead && (
+              <button type="button" className="lead-drawer-ctrl-btn" onClick={() => { setSensitiveError(""); setConfirmAction("restore"); }} title="Restaurar lead">
+                <ArchiveRestore size={14} />
+              </button>
+            )}
+            <button
+              ref={closeBtnRef}
+              className="lead-drawer-ctrl-btn"
+              onClick={onClose}
+              aria-label="Cerrar detalle del lead"
+              title="Cerrar"
+            >
+              <X size={15} />
+            </button>
+          </div>
 
           <div className="lead-drawer-header-top">
             <div className="lead-drawer-title-block">
@@ -307,7 +392,16 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onPatch
               </h2>
               {(subtitle || lead.business_model || lead.job_title || lead.country_code) && (
                 <p className="lead-drawer-subtitle">
-                  {[subtitle, lead.job_title, lead.business_model, lead.country_code].filter(Boolean).join(" · ")}
+                  {subtitle && <span>{subtitle}</span>}
+                  {lead.job_title && (
+                    <><span className="lead-drawer-subtitle-sep">·</span><span className="lead-drawer-subtitle-highlight">{lead.job_title}</span></>
+                  )}
+                  {lead.business_model && (
+                    <><span className="lead-drawer-subtitle-sep">·</span><span>{lead.business_model}</span></>
+                  )}
+                  {lead.country_code && (
+                    <><span className="lead-drawer-subtitle-sep">·</span><span className="lead-drawer-subtitle-country">{lead.country_code}</span></>
+                  )}
                 </p>
               )}
             </div>
@@ -333,8 +427,13 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onPatch
               <button
                 type="button"
                 className={`lead-drawer-stage-pill lead-drawer-stage-pill--${lead.lifecycle_stage} lead-drawer-stage-pill--interactive`}
-                onClick={() => scrollToAnchor("stage-edit-anchor")}
-                title="Cambiar estado"
+                onClick={() => {
+                  setShowStageEdit((v) => {
+                    if (!v) setTimeout(() => document.getElementById("stage-edit-anchor")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+                    return !v;
+                  });
+                }}
+                title={showStageEdit ? "Ocultar estado del lead" : "Ver estado del lead →"}
               >
                 {STAGE_LABELS[lead.lifecycle_stage] || lead.lifecycle_stage}
               </button>
@@ -370,26 +469,9 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onPatch
               </span>
             )}
           </div>
-        </header>
 
-        <div className="lead-drawer-body">
-          <div className="lead-record-actions">
-            {!isArchived(lead) && onEditLead && (
-              <button type="button" className="btn btn-ghost" onClick={openEdit}><Edit3 size={15} /> Editar datos</button>
-            )}
-            {!isArchived(lead) && onArchiveLead && (
-              <button type="button" className="btn btn-danger-ghost" onClick={() => { setSensitiveError(""); setConfirmAction("archive"); }}>
-                <Archive size={15} /> Archivar
-              </button>
-            )}
-            {isArchived(lead) && onRestoreLead && (
-              <button type="button" className="btn btn-primary" onClick={() => { setSensitiveError(""); setConfirmAction("restore"); }}>
-                <ArchiveRestore size={15} /> Restaurar lead
-              </button>
-            )}
-          </div>
           {(lead.whatsapp || lead.work_email) && (
-            <div className="lead-drawer-actions">
+            <div className="lead-drawer-actions lead-drawer-actions--header">
               {lead.whatsapp && (
                 <a
                   href={`https://wa.me/${cleanPhone(lead.whatsapp)}`}
@@ -434,10 +516,30 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onPatch
             </div>
           )}
 
-          {onUpdateLead && (
-            <div className="lead-drawer-stage-edit-block" id="stage-edit-anchor">
+        </header>
+
+        <div className="lead-drawer-body">
+          {/* ── Seguimiento — protagonista ── */}
+          {!isArchived(lead) && onEditLead && (
+            <IrvingTracker
+              lead={lead}
+              status={irvingStatus}
+              error={irvingError}
+              notes={irvingNotes}
+              onNotesChange={setIrvingNotes}
+              onNotesSave={saveIrvingNotes}
+              notesStatus={notesStatus}
+              currentStage={lead.lifecycle_stage || "nuevo"}
+              onStageAdvance={changeStage}
+              onSaveField={saveIrvingField}
+            />
+          )}
+
+          {/* ── Estado del lead — oculto por defecto, se abre desde el pill del header ── */}
+          {onUpdateLead && showStageEdit && (
+            <div className="lead-drawer-stage-edit-block lead-drawer-stage-edit-block--compact" id="stage-edit-anchor">
               <div className="lead-drawer-stage-edit-head">
-                <h3 className="lead-drawer-section-title">Estado del lead</h3>
+                <span className="lead-drawer-stage-edit-label">Estado del lead</span>
                 {stageStatus === "saving" && (
                   <span className="lead-drawer-stage-hint">Guardando…</span>
                 )}
@@ -615,7 +717,12 @@ export function LeadDrawer({ lead, catalogs = {}, onClose, onUpdateLead, onPatch
                       ))}
                     </select>
                   ) : fieldType === "bool" ? (
-                    <select value={editValues[key] || ""} onChange={(e) => setEditValues((v) => ({ ...v, [key]: e.target.value }))}>
+                    <select
+                      value={editValues[key] || ""}
+                      disabled={IRVING_PREREQS[key] && editValues[IRVING_PREREQS[key]] !== "Sí"}
+                      title={IRVING_PREREQS[key] && editValues[IRVING_PREREQS[key]] !== "Sí" ? `Primero completa "${IRVING_PREREQS[key].replace("contacto_", "")}"` : undefined}
+                      onChange={(e) => setEditValues((v) => ({ ...v, [key]: e.target.value }))}
+                    >
                       <option value="">Sin marcar</option>
                       <option value="Sí">Sí</option>
                     </select>
@@ -1177,6 +1284,182 @@ function scoreClass(score) {
   if (score >= 2) return "mid";
   if (score >= 1) return "low";
   return "cold";
+}
+
+const PROPOSAL_OFFERINGS = [
+  { key: "esencial", label: "CRM Esencial", price: "$10,000 MXN" },
+  { key: "avanzado", label: "CRM Avanzado", price: "$15,000 MXN" },
+  { key: "kapso",    label: "Módulo Kapso", price: "$12,000 MXN" },
+];
+
+const IRVING_STEPS = [
+  { key: "contacto_whatsapp",  label: "WhatsApp",  emptyLabel: "Sin contactar" },
+  { key: "contacto_llamada",   label: "Llamada",   emptyLabel: "Sin marcar" },
+  { key: "contacto_demo",      label: "Demo",      emptyLabel: "No" },
+  { key: "contacto_propuesta", label: "Propuesta", emptyLabel: "No" },
+];
+
+function ProposalModal({ lead, onClose, onSent }) {
+  const [offering, setOffering] = useState("esencial");
+  const [customPrice, setCustomPrice] = useState("");
+  const [notes, setNotes] = useState("");
+  const [status, setStatus] = useState("idle"); // idle | saving | error
+  const [error, setError] = useState("");
+
+  const handleSend = async (e) => {
+    e.preventDefault();
+    if (!lead?.lead_id) return;
+    setStatus("saving");
+    setError("");
+    try {
+      const data = await sendProposal({
+        leadId: lead.lead_id,
+        offering,
+        customPrice: customPrice ? Number(customPrice) : null,
+        notes,
+      });
+      onSent(data);
+    } catch (err) {
+      setStatus("error");
+      setError(err.message || "No se pudo enviar la propuesta");
+    }
+  };
+
+  const selected = PROPOSAL_OFFERINGS.find((o) => o.key === offering);
+
+  return (
+    <div className="sensitive-modal-overlay" onClick={(e) => { e.stopPropagation(); if (status !== "saving") onClose(); }}>
+      <form className="sensitive-modal" onSubmit={handleSend} onClick={(e) => e.stopPropagation()}>
+        <div className="sensitive-modal-head">
+          <div>
+            <h3>Enviar propuesta</h3>
+            <p>Se enviará por correo a <strong>{lead?.work_email || "sin email"}</strong>.</p>
+          </div>
+        </div>
+        <div className="proposal-offerings">
+          {PROPOSAL_OFFERINGS.map((o) => (
+            <label key={o.key} className={`proposal-offering ${offering === o.key ? "proposal-offering--selected" : ""}`}>
+              <input type="radio" name="offering" value={o.key} checked={offering === o.key} onChange={() => setOffering(o.key)} />
+              <span className="proposal-offering-label">{o.label}</span>
+              <span className="proposal-offering-price">{o.price}</span>
+            </label>
+          ))}
+        </div>
+        <label className="lead-edit-field lead-edit-field--wide">
+          <span>Precio personalizado (opcional, MXN)</span>
+          <input
+            type="number"
+            min="0"
+            placeholder={selected ? selected.price : ""}
+            value={customPrice}
+            onChange={(e) => setCustomPrice(e.target.value)}
+          />
+        </label>
+        <label className="lead-edit-field lead-edit-field--wide">
+          <span>Notas adicionales (opcional)</span>
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={2000} rows={3} placeholder="Condiciones especiales, contexto…" />
+        </label>
+        {error && <p className="sensitive-modal-error">{error}</p>}
+        <div className="sensitive-modal-actions">
+          <button type="button" className="btn btn-ghost" disabled={status === "saving"} onClick={onClose}>Cancelar</button>
+          <button type="submit" className="btn btn-primary" disabled={status === "saving" || !lead?.work_email}>
+            {status === "saving" ? "Enviando…" : "Enviar propuesta"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+const STAGE_ORDER = ["nuevo", "contactado", "calificado", "propuesta", "cerrado_ganado", "cerrado_perdido"];
+
+const IRVING_STAGE_PROMPTS = {
+  contacto_llamada: {
+    targetStage: "contactado",
+    message: "¿Avanzar el lead a Contactado?",
+  },
+  contacto_demo: {
+    targetStage: "calificado",
+    message: "¿El lead está calificado? Avanzar a Calificado",
+  },
+};
+
+function IrvingTracker({ lead, status, error, notes, onNotesChange, onNotesSave, notesStatus, currentStage, onStageAdvance, onSaveField }) {
+  const [pendingPrompt, setPendingPrompt] = useState(null);
+
+  const handleStepChange = (step, newValue) => {
+    onSaveField(step.key, newValue);
+    if (newValue === "Sí" && IRVING_STAGE_PROMPTS[step.key]) {
+      const { targetStage } = IRVING_STAGE_PROMPTS[step.key];
+      if (STAGE_ORDER.indexOf(currentStage) < STAGE_ORDER.indexOf(targetStage)) {
+        setPendingPrompt(step.key);
+      }
+    } else {
+      setPendingPrompt(null);
+    }
+  };
+
+  const handleConfirmPrompt = () => {
+    if (pendingPrompt && onStageAdvance) onStageAdvance(IRVING_STAGE_PROMPTS[pendingPrompt].targetStage);
+    setPendingPrompt(null);
+  };
+
+  return (
+    <div className="irving-tracker">
+      <h3 className="lead-drawer-section-title">Seguimiento</h3>
+      <div className="irving-grid">
+        {IRVING_STEPS.map((step, idx) => {
+          const currentValue = lead?.[step.key] || "";
+          const isDone = currentValue === "Sí";
+          const prereqKey = IRVING_PREREQS[step.key];
+          const prereqDone = !prereqKey || lead?.[prereqKey] === "Sí";
+          return (
+            <div key={step.key} className={`irving-cell ${isDone ? "irving-cell--done" : ""}`}>
+              <span className="irving-cell-label">{step.label}</span>
+              <select
+                className="irving-cell-select"
+                value={currentValue}
+                onChange={(e) => handleStepChange(step, e.target.value)}
+                disabled={status === "saving" || !prereqDone}
+                title={!prereqDone ? `Primero completa ${IRVING_STEPS[idx - 1]?.label}` : undefined}
+              >
+                <option value="">{step.emptyLabel}</option>
+                <option value="Sí">Sí</option>
+              </select>
+            </div>
+          );
+        })}
+      </div>
+
+      {status === "error" && (
+        <p className="irving-tracker-hint irving-tracker-hint--error">{error}</p>
+      )}
+
+      {pendingPrompt && (
+        <div className="irving-stage-prompt">
+          <span className="irving-stage-prompt-text">{IRVING_STAGE_PROMPTS[pendingPrompt].message}</span>
+          <button type="button" className="irving-stage-prompt-confirm" onClick={handleConfirmPrompt}>Sí →</button>
+          <button type="button" className="irving-stage-prompt-dismiss" onClick={() => setPendingPrompt(null)} aria-label="Descartar">×</button>
+        </div>
+      )}
+
+      <div className="irving-notes">
+        <span className="irving-notes-label">Observaciones de seguimiento</span>
+        <textarea
+          className="irving-notes-input"
+          placeholder="Escribe aquí las observaciones…"
+          value={notes}
+          onChange={(e) => onNotesChange(e.target.value)}
+          onBlur={onNotesSave}
+          maxLength={2000}
+          rows={3}
+        />
+        {notesStatus === "saving" && <span className="irving-notes-status">Guardando…</span>}
+        {notesStatus === "saved"  && <span className="irving-notes-status irving-notes-status--ok">Guardado</span>}
+        {notesStatus === "error"  && <span className="irving-notes-status irving-notes-status--err">Error al guardar</span>}
+      </div>
+    </div>
+  );
 }
 
 // Etapas abiertas del pipeline lineal. Cerrado se maneja aparte como outcome.
