@@ -148,3 +148,10 @@ export function archiveLead({ leadId, reason, confirmation }) {
 export function restoreLead({ leadId, reason = "Restaurado desde dashboard", confirmation }) {
   return mutateLead("restoreLead", { lead_id: leadId, reason, confirmation });
 }
+
+export function sendProposal({ leadId, offering, customPrice, notes = "" }) {
+  const payload = { lead_id: leadId, offering };
+  if (customPrice != null && customPrice > 0) payload.custom_price = customPrice;
+  if (notes.trim()) payload.notes = notes.trim();
+  return mutateLead("sendProposal", payload);
+}
