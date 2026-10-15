@@ -865,22 +865,23 @@ function ScoringPeekPopover({ lead, onSeeMore }) {
   );
 }
 
-// Agrupa eventos por canal para colapsar repeticiones en la UI (ej: 3 clicks de WhatsApp
-// desde el dashboard aparecen como UNA sola fila con "× 3"). El backend sigue guardando
-// una fila por evento en 02_TOUCH_EVENTS, así que la trazabilidad completa queda intacta.
+// Agrupa eventos por tipo de acción (tone) para mostrar 1 entrada por acción.
+// whatsapp_dashboard + whatsapp_email = 1 fila "WhatsApp". El backend sigue guardando
+// cada evento individualmente en 02_TOUCH_EVENTS para trazabilidad completa.
 function groupEventsByChannel(events) {
   const map = new Map();
   for (const e of events || []) {
-    const key = String(e.channel || "").toLowerCase() || "neutral";
+    const meta = describeTouchEvent(e);
+    const key = meta.tone;
     if (!map.has(key)) {
-      map.set(key, { channel: e.channel, count: 0, latestAt: "", latestId: "" });
+      map.set(key, { channel: e.channel, tone: meta.tone, latestAt: "", latestId: "" });
     }
     const g = map.get(key);
-    g.count += 1;
     const at = String(e.event_at || "");
     if (!g.latestAt || at.localeCompare(g.latestAt) > 0) {
       g.latestAt = at;
       g.latestId = e.event_id || `${at}-${key}`;
+      g.channel = e.channel;
     }
   }
   return Array.from(map.values()).sort((a, b) => (b.latestAt || "").localeCompare(a.latestAt || ""));
